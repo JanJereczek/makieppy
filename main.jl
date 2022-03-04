@@ -28,6 +28,9 @@ begin
 	include(srcdir("utils.jl"));
 	include(srcdir("datahandle.jl"));
 	include(srcdir("plot.jl"));
+	include(srcdir("colors.jl"));
+	include(srcdir("labels.jl"));
+	include(srcdir("video.jl"));
 end
 
 # ╔═╡ fcc18548-3ab8-421f-b2bd-96189ae925e5
@@ -60,6 +63,11 @@ begin
 	end
 end
 
+# ╔═╡ 20f47d5b-7100-4c29-95b4-33a41770bcea
+md"""
+## Select Files of Interest
+"""
+
 # ╔═╡ 0895e44a-6894-4f1d-84fe-6f1838783b32
 begin
 	path = "/media/Data/Jan/GridRamp1/";
@@ -67,6 +75,7 @@ begin
 	ixs = collect(1:3);
 	nc1D_list_filt = filter_nc_list( nc1D_list, ixs );
 	nc2D_list_filt = filter_nc_list( nc2D_list, ixs );
+	colors, labels1D, labels3D = load_colors(), load_1Dlabels(), load_3Dlabels()
 end
 
 # ╔═╡ e44728c2-fd00-4f46-8af3-5552c2ce086c
@@ -76,10 +85,11 @@ md"""
 
 # ╔═╡ 3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 begin
+	dt1D = 10;
 	var1D_list = ["V_ice", "hyst_f_now", "bmb", "smb"];
 	nc1D_dict = init_dict( nc1D_list_filt );
 	nc1D_dict = load_data!( nc1D_dict, var1D_list );
-	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000));
+	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels1D, dt1D);
 	fig1D = init_fig( line_plotcons );
 	axs1D = init_axs(fig1D, line_plotcons, var1D_list);
 end
@@ -108,20 +118,46 @@ end
 
 # ╔═╡ c582d0d2-aaad-4b3f-9dc0-42f4a5f3d2c6
 begin
+	dt3D = 1000;
 	exp_key = nc2D_list_filt[exp_id];
 	nt = size(nc2D_dict[exp_key]["H_ice"])[3];
-	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500));
+	tframes = 1:nt;
+	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, dt3D);
 	fig2D = init_fig( hm_plotcons );
 	axs2D = init_hm_axs(fig2D, hm_plotcons, var_list, exp_key, extrema2D_dict);
 end
 
 # ╔═╡ 916c521b-7e41-49f6-a94a-e401b09e8f3e
-@bind tframe Select(1:nt)
+@bind tframe Select(tframes)
 
 # ╔═╡ ce11169d-8dc1-4d9a-85d3-ed0e68447cd7
 begin
-	fig2D_updated = update_hm_2D(fig2D, axs2D, nc2D_dict, exp_key, tframe, var_list, hm_plotcons, extrema2D_dict )
+	fig2D_updated = update_hm_2D( fig2D, axs2D, nc2D_dict, exp_key, tframe, var_list, hm_plotcons, extrema2D_dict )
 end
+
+# ╔═╡ da4ed259-1752-4209-b555-4ab6f1dda208
+md"""
+## Generate Video
+"""
+
+# ╔═╡ 7a215c7e-860b-4ee2-84de-c95404678d41
+@bind gen_vid CheckBox(false)
+
+# ╔═╡ daae5d13-c460-4de4-926b-eca63f60f8b0
+begin
+	if gen_vid
+		get_hm_video( fig2D, axs2D, nc2D_dict, exp_key, var_list, hm_plotcons, extrema2D_dict, tframes, 5 )
+	end
+end
+
+# ╔═╡ 22394677-6c70-4b7b-a2d1-26524bbbcfbc
+md"""
+### Evolution Plot
+"""
+
+# ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
+# fig2D = init_fig( hm_plotcons );
+# axs2D = init_hm_axs(fig2D, hm_plotcons, var_list, exp_key, extrema2D_dict);
 
 # ╔═╡ Cell order:
 # ╟─fcc18548-3ab8-421f-b2bd-96189ae925e5
@@ -133,6 +169,7 @@ end
 # ╠═5978d34d-80bf-45a4-bfec-b88d0d4bb5e5
 # ╠═b79c0b90-12b2-4108-af34-2caf4a269c10
 # ╠═acb1556b-dce7-4ec1-9f9c-85aacf500553
+# ╟─20f47d5b-7100-4c29-95b4-33a41770bcea
 # ╠═0895e44a-6894-4f1d-84fe-6f1838783b32
 # ╟─e44728c2-fd00-4f46-8af3-5552c2ce086c
 # ╠═3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
@@ -144,3 +181,8 @@ end
 # ╠═c582d0d2-aaad-4b3f-9dc0-42f4a5f3d2c6
 # ╠═916c521b-7e41-49f6-a94a-e401b09e8f3e
 # ╠═ce11169d-8dc1-4d9a-85d3-ed0e68447cd7
+# ╟─da4ed259-1752-4209-b555-4ab6f1dda208
+# ╠═7a215c7e-860b-4ee2-84de-c95404678d41
+# ╠═daae5d13-c460-4de4-926b-eca63f60f8b0
+# ╟─22394677-6c70-4b7b-a2d1-26524bbbcfbc
+# ╠═65bfe62a-1b2e-4368-8ee7-dd5662dd58ce

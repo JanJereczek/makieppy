@@ -7,4 +7,7 @@ mutable struct InitPlotConst
     ncols::Int
     fontsize::Int
     resolution::Tuple{Int, Int}
+    colors::Dict
+    labels::Dict
+    dt::Int
 end
