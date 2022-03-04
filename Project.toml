@@ -1,7 +1,13 @@
 name = "makieppy"
 authors = ["Jan Swierczek-Jereczek"]
-[compat]
-julia = "1.7.0"
-DrWatson = "2.9.1"
+
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+
+[compat]
+DrWatson = "2.9.1"
+julia = "1.7.0"
