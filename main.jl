@@ -46,6 +46,7 @@ md"""
 
 + NCDatasets: allows loading in .nc-format.
 + Cairomakie: plotting package.
++ PlutoUI: provides wide library of widgets for interactivity.
 """
 
 # ╔═╡ fc889e21-3300-42d6-928f-c5f0b193bc60
@@ -71,10 +72,10 @@ md"""
 # ╔═╡ 0895e44a-6894-4f1d-84fe-6f1838783b32
 begin
 	path = "/media/Data/Jan/GridRamp1/";
-	nc1D_list, nc2D_list = get_nc_lists(path);
+	nc1D_list, nc3D_list = get_nc_lists(path);
 	ixs = collect(1:3);
 	nc1D_list_filt = filter_nc_list( nc1D_list, ixs );
-	nc2D_list_filt = filter_nc_list( nc2D_list, ixs );
+	nc3D_list_filt = filter_nc_list( nc3D_list, ixs );
 	colors, labels1D, labels3D = load_colors(), load_1Dlabels(), load_3Dlabels()
 end
 
@@ -86,10 +87,11 @@ md"""
 # ╔═╡ 3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 begin
 	dt1D = 10;
+	dt3D = 1000;
 	var1D_list = ["V_ice", "hyst_f_now", "bmb", "smb"];
 	nc1D_dict = init_dict( nc1D_list_filt );
 	nc1D_dict = load_data!( nc1D_dict, var1D_list );
-	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels1D, dt1D);
+	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels1D, dt1D, dt3D);
 	fig1D = init_fig( line_plotcons );
 	axs1D = init_axs(fig1D, line_plotcons, var1D_list);
 end
@@ -108,9 +110,9 @@ md"""
 # ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
 begin
 	var_list = ["H_ice", "uxy_s"];
-	nc2D_dict = init_dict( nc2D_list_filt );
-	nc2D_dict = load_data!( nc2D_dict, var_list );
-	extrema2D_dict = get_extrema( nc2D_dict, var_list, nc2D_list_filt );
+	nc3D_dict = init_dict( nc3D_list_filt );
+	nc3D_dict = load_data!( nc3D_dict, var_list );
+	extrema3D_dict = get_extrema( nc3D_dict, var_list, nc3D_list_filt );
 end
 
 # ╔═╡ 517e2adb-2fa4-4528-80a5-7de5b9b2b36d
@@ -118,13 +120,12 @@ end
 
 # ╔═╡ c582d0d2-aaad-4b3f-9dc0-42f4a5f3d2c6
 begin
-	dt3D = 1000;
-	exp_key = nc2D_list_filt[exp_id];
-	nt = size(nc2D_dict[exp_key]["H_ice"])[3];
+	exp_key = nc3D_list_filt[exp_id];
+	nt = size( nc3D_dict[exp_key]["H_ice"] )[3];
 	tframes = 1:nt;
-	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, dt3D);
-	fig2D = init_fig( hm_plotcons );
-	axs2D = init_hm_axs(fig2D, hm_plotcons, var_list, exp_key, extrema2D_dict);
+	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, dt1D, dt3D);
+	fig3D = init_fig( hm_plotcons );
+	axs3D = init_hm_axs(fig3D, hm_plotcons, var_list, exp_key, extrema3D_dict);
 end
 
 # ╔═╡ 916c521b-7e41-49f6-a94a-e401b09e8f3e
@@ -132,7 +133,7 @@ end
 
 # ╔═╡ ce11169d-8dc1-4d9a-85d3-ed0e68447cd7
 begin
-	fig2D_updated = update_hm_2D( fig2D, axs2D, nc2D_dict, exp_key, tframe, var_list, hm_plotcons, extrema2D_dict )
+	fig3D_updated = update_hm_3D( fig3D, axs3D, nc3D_dict, nc1D_dict, exp_key, tframe, var_list, hm_plotcons, extrema3D_dict )
 end
 
 # ╔═╡ da4ed259-1752-4209-b555-4ab6f1dda208
@@ -146,7 +147,7 @@ md"""
 # ╔═╡ daae5d13-c460-4de4-926b-eca63f60f8b0
 begin
 	if gen_vid
-		get_hm_video( fig2D, axs2D, nc2D_dict, exp_key, var_list, hm_plotcons, extrema2D_dict, tframes, 5 )
+		get_hm_video( fig3D, axs3D, nc3D_dict, exp_key, var_list, hm_plotcons, extrema3D_dict, tframes, 5 )
 	end
 end
 
@@ -156,8 +157,42 @@ md"""
 """
 
 # ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
-# fig2D = init_fig( hm_plotcons );
-# axs2D = init_hm_axs(fig2D, hm_plotcons, var_list, exp_key, extrema2D_dict);
+begin
+	evolhm_plotcons = InitPlotConst(2, 2, 20, (1200, 1200), colors, labels3D, dt1D, dt3D);
+	evolution_frames = collect(10:10:40)
+	evolution_hmplot(evolution_frames, evolhm_plotcons, "H_ice", exp_key, extrema3D_dict)
+end
+
+# ╔═╡ c69d8900-4f31-4e8e-b066-219c187531b5
+md"""
+## Difference Plot
+"""
+
+# ╔═╡ 0d9e0b46-9e6b-4da0-ac99-05cfab2d4743
+@bind exp_id1 Select(ixs)
+
+# ╔═╡ 2cd75200-4c80-4818-bd4e-22ba0ef1271b
+@bind exp_id2 Select(ixs)
+
+# ╔═╡ e9ad8f74-5646-4bc7-bcc6-039575070a2f
+begin
+	exp_key1 = get_key(nc3D_list_filt, exp_id1)
+	exp_key2 = get_key(nc3D_list_filt, exp_id2)
+	tframes1 = get_timeframes(exp_key1, nc3D_dict)
+	tframes2 = get_timeframes(exp_key2, nc3D_dict)
+end
+
+# ╔═╡ 7d1c8eb3-bfa3-4d21-8412-bd56d30fd2a3
+@bind tframe1 Select(tframes1)
+
+# ╔═╡ 84dd18b9-3a00-499a-99ad-4000f2b3c245
+@bind tframe2 Select(tframes2)
+
+# ╔═╡ c1582e81-27cf-4644-ae08-168f87eefa8b
+plot_diffhm_3D(nc3D_dict, exp_key1, exp_key2, tframe1, tframe2, var_list, hm_plotcons)
+
+# ╔═╡ 80146c29-e13b-47ec-b8d3-040929e0507a
+
 
 # ╔═╡ Cell order:
 # ╟─fcc18548-3ab8-421f-b2bd-96189ae925e5
@@ -186,3 +221,11 @@ md"""
 # ╠═daae5d13-c460-4de4-926b-eca63f60f8b0
 # ╟─22394677-6c70-4b7b-a2d1-26524bbbcfbc
 # ╠═65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
+# ╟─c69d8900-4f31-4e8e-b066-219c187531b5
+# ╠═0d9e0b46-9e6b-4da0-ac99-05cfab2d4743
+# ╠═2cd75200-4c80-4818-bd4e-22ba0ef1271b
+# ╠═e9ad8f74-5646-4bc7-bcc6-039575070a2f
+# ╠═7d1c8eb3-bfa3-4d21-8412-bd56d30fd2a3
+# ╠═84dd18b9-3a00-499a-99ad-4000f2b3c245
+# ╠═c1582e81-27cf-4644-ae08-168f87eefa8b
+# ╠═80146c29-e13b-47ec-b8d3-040929e0507a

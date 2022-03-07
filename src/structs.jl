@@ -9,5 +9,6 @@ mutable struct InitPlotConst
     resolution::Tuple{Int, Int}
     colors::Dict
     labels::Dict
-    dt::Int
+    dt1D::Int
+    dt3D::Int
 end
