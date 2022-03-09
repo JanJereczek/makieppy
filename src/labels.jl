@@ -1,7 +1,7 @@
 function load_1Dlabels()
 
     l = Dict()
-    l["V_ice"] = L"$V_{ice}$ [$10^6$ km]"
+    l["V_ice"] = L"$V_{ice}$ [$10^6$ $text{km}^3$]"
     l["hyst_f_now"] = L"$\Delta T$ [K]"
     l["bmb"] = L"$\frac{d m}{d t}_{base}$ [1]"
     l["smb"] = L"$\frac{d m}{d t}_{surf}$ [1]"

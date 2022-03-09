@@ -10,7 +10,15 @@ end
 
 function init_axs(fig::Figure, plotcons::Any, var_list::Vector{String})
     nrows, ncols = plotcons.nrows, plotcons.ncols
-    axs = [Axis(fig[i, j][1, 1], xlabel = L"$t$ [s]", ylabel = plotcons.labels[get_var(i, j, ncols, var_list)] ) for j in 1:ncols, i in 1:nrows]
+    axs = [Axis(
+        fig[i, j][1, 1],
+        xlabel = L"$t$ [yr]",
+        ylabel = plotcons.labels[get_var(i, j, ncols, var_list)],
+        xminorticks = IntervalsBetween(5),
+        yminorticks = IntervalsBetween(4),
+        xminorgridvisible = true,
+        yminorgridvisible = true,
+        ) for j in 1:ncols, i in 1:nrows]
     return axs
 end
 
@@ -25,13 +33,12 @@ end
 ################## Update Functions ######################
 ##########################################################
 
-function update_line(
-    fig::Figure,
+function init_lines(
     axs, 
     nc_dict::Dict,
     var_list::Vector{String},
     plotcons::Any,
-    hl_ix::Int,
+    downsample_factor::Int,
     )
 
     nrows, ncols = plotcons.nrows, plotcons.ncols
@@ -39,20 +46,42 @@ function update_line(
         for j in 1:ncols
             k = get_k(i, j, ncols)
             var = var_list[k]
-            empty!(axs[k])
             for l in 1:length(nc_dict["nc_list"])
                 exp = nc_dict["nc_list"][l]
-                plot_var = nc_dict[exp][var]
-                t = plotcons.dt1D * 0:(length(plot_var)-1)
-                lines!(axs[k], t, nc_dict[exp][var], color = :lightgray)
-                if l == hl_ix
-                    global phl = plot_var
-                    global thl = t
-                end
+                plot_var = nc_dict[exp][var][1:downsample_factor:end-1]
+                t = plotcons.dt1D * downsample_factor * 0:(length(plot_var)-1)
+                lines!(axs[k], t, plot_var, color = :lightgray)
             end
-            lines!(axs[k], thl, phl, color = :royalblue4, line_width = 2)
         end
     end
+end
+
+function update_line(
+    fig::Figure,
+    axs, 
+    nc_dict::Dict,
+    var_list::Vector{String},
+    plotcons::Any,
+    hl_ix::Int,
+    downsample_factor::Int,
+    )
+
+    nrows, ncols = plotcons.nrows, plotcons.ncols
+    var_dict = nc_dict[ nc_dict["nc_list"][hl_ix] ]
+    for i in 1:nrows
+        for j in 1:ncols
+            k = get_k(i, j, ncols)
+            var = var_list[k]
+            if plotcons.hl
+                delete!(axs[k], axs[k].scene[end])
+            end
+            var_hl = var_dict[var][1:downsample_factor:end-1]
+            t_hl = plotcons.dt1D * downsample_factor * 0:(length(var_hl)-1)
+            lines!(axs[k], t_hl, var_hl, color = :royalblue4, line_width = 2)
+            plotcons.hl = true
+        end
+    end
+
     return fig
 end
 
@@ -68,7 +97,6 @@ function update_hm_3D(
     extrema_dict::Dict,
     )
 
-
     nrows, ncols = plotcons.nrows, plotcons.ncols
     for i in 1:nrows
         for j in 1:ncols
@@ -76,13 +104,14 @@ function update_hm_3D(
             heatmap!( axs[k], nc_dict[ exp_key ][ var_list[k] ][:, :, tframe], colorrange = extrema_dict[exp_key][var_list[k]] , colormap = plotcons.colors[ var_list[k] ])
         end
     end
+
     t = (tframe-1) * plotcons.dt3D
     tframe1D = floor(Int, t / plotcons.dt1D + 1)
     exp_key1D = string( chop_ncfile_tail(exp_key), "1D.nc" )
-    ΔT = nc1D_dict[ exp_key1D ][ "hyst_f_now" ][ tframe1D ]
+    ΔT = round(nc1D_dict[ exp_key1D ][ "hyst_f_now" ][ tframe1D ]; digits=2)
+    text!(axs[end], L"$t = $ %$(string( t )) yr", position = (30, 10), align = (:center, :center))
+    text!(axs[end], L"$\Delta T = $ %$(string( ΔT )) K", position = (100, 10), align = (:center, :center))
 
-    text!(L"$t = $ %$(string( t )) yr", position = (30, 10), align = (:center, :center))
-    text!(L"$\Delta T = $ %$(string( ΔT )) K", position = (80, 10), align = (:center, :center))
     return fig
 end
 
@@ -115,7 +144,6 @@ end
 function evolution_hmplot(frames::Vector{Int}, plotcons::Any, var::String, exp_key::String, extrema_dict::Dict)
     fig = init_fig(plotcons)
     nrows, ncols = plotcons.nrows, plotcons.ncols
-    # t = 
     axs = [Axis(fig[i, j][1, 1], title = L"$t = $ %$(string( plotcons.dt3D * frames[ get_k(i, j, ncols) ] )) yr" ) for j in 1:ncols, i in 1:nrows]
     for i in 1:nrows
         for j in 1:ncols

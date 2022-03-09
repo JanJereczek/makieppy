@@ -23,6 +23,9 @@ using DrWatson;
 # ╔═╡ 1b29ed5a-dc9c-498e-81fb-5cfbf1404810
 using NCDatasets, CairoMakie, PlutoUI;
 
+# ╔═╡ b79c0b90-12b2-4108-af34-2caf4a269c10
+include(srcdir("structs.jl"))
+
 # ╔═╡ acb1556b-dce7-4ec1-9f9c-85aacf500553
 begin
 	include(srcdir("utils.jl"));
@@ -57,13 +60,6 @@ md"""
 # ╔═╡ 5978d34d-80bf-45a4-bfec-b88d0d4bb5e5
 @bind load_struct CheckBox(true)
 
-# ╔═╡ b79c0b90-12b2-4108-af34-2caf4a269c10
-begin
-	if load_struct
-		include(srcdir("structs.jl"))
-	end
-end
-
 # ╔═╡ 20f47d5b-7100-4c29-95b4-33a41770bcea
 md"""
 ## Select Files of Interest
@@ -71,9 +67,15 @@ md"""
 
 # ╔═╡ 0895e44a-6894-4f1d-84fe-6f1838783b32
 begin
-	path = "/media/Data/Jan/GridRamp1/";
-	nc1D_list, nc3D_list = get_nc_lists(path);
-	ixs = collect(1:3);
+	# path = "/media/Data/Jan/yelmox_v1.662/GridRamp1/";
+	# ixs = collect(1:3);
+	# ixs = [1];
+	path = "/media/Data/Jan/yelmox_v1.75/ramp1/";
+	nc1D_list = get_nc_lists(path, "yelmo1D.nc");
+	nc1D_WAIS_list = get_nc_lists(path, "yelmo1D_WAIS.nc");
+	nc3D_list = get_nc_lists(path, "yelmo2D.nc");
+	
+	ixs = collect(1:length(nc3D_list))
 	nc1D_list_filt = filter_nc_list( nc1D_list, ixs );
 	nc3D_list_filt = filter_nc_list( nc3D_list, ixs );
 	colors, labels1D, labels3D = load_colors(), load_1Dlabels(), load_3Dlabels()
@@ -84,35 +86,72 @@ md"""
 ## 1D Variables
 """
 
+# ╔═╡ 8e0c75ef-ae2d-4a7e-8314-5521150f51ac
+begin
+	vars1D = sort( get_vars( nc1D_list[1] ) )
+	vars3D = sort( get_vars( nc3D_list[1] ) )
+end
+
+# ╔═╡ ef76d945-7388-4642-984f-58e1197e7b10
+@bind var1D_list MultiCheckBox(vars1D , default =  ["V_ice", "hyst_f_now", "bmb", "smb"])
+
 # ╔═╡ 3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 begin
-	dt1D = 10;
+	dt1D = 1;
 	dt3D = 1000;
-	var1D_list = ["V_ice", "hyst_f_now", "bmb", "smb"];
+	downsample_factor = 100;
+	# var1D_list = ["V_ice", "hyst_f_now", "bmb", "smb"];
+	# @bind my_functions MultiCheckBox([sin, cos, tan])
 	nc1D_dict = init_dict( nc1D_list_filt );
 	nc1D_dict = load_data!( nc1D_dict, var1D_list );
-	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels1D, dt1D, dt3D);
+	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels1D, dt1D, dt3D, false);
 	fig1D = init_fig( line_plotcons );
 	axs1D = init_axs(fig1D, line_plotcons, var1D_list);
 end
+
+# ╔═╡ e2ee4337-0251-4775-9f68-1cc3ca306b3b
+init_lines(axs1D, nc1D_dict, var1D_list, line_plotcons, downsample_factor)
 
 # ╔═╡ 547fcf0a-1f15-43e0-9532-be9d2cfcd175
 @bind hl_ix Select(ixs, default = 1)
 
 # ╔═╡ 4144b41b-3d5a-4dcb-9e61-5d532a3a8854
-update_line(fig1D, axs1D, nc1D_dict, var1D_list, line_plotcons, hl_ix)
+update_line(fig1D, axs1D, nc1D_dict, var1D_list, line_plotcons, hl_ix, downsample_factor)
+
+# ╔═╡ d3a22df5-56dd-4e54-b987-f6097e01f6bd
+begin
+	if false
+		save_fig(plotsdir("yelmox_v1.75/aqef_retreat/"), "1D", "both", fig1D)
+	end
+end
+
+# ╔═╡ 661c6c30-0650-4669-833f-885dd6cc9418
+md"""
+## Comparing End States
+"""
+
+# ╔═╡ 32271713-4f3d-4e9f-b9dc-2679bb38f821
+
 
 # ╔═╡ 0d80c308-60c1-4390-b999-ba87f62c5e67
 md"""
 ## 3D Variables
 """
 
-# ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
+# ╔═╡ d2011ce2-0e85-4a00-9a11-b12c13dbc5f7
+@bind var3D_list MultiCheckBox(vars3D , default =  ["H_ice", "uxy_s"])
+
+# ╔═╡ 496ce8cd-5d9c-4a00-95ac-f0c26aad1a84
 begin
-	var_list = ["H_ice", "uxy_s"];
 	nc3D_dict = init_dict( nc3D_list_filt );
 	nc3D_dict = load_data!( nc3D_dict, var_list );
-	extrema3D_dict = get_extrema( nc3D_dict, var_list, nc3D_list_filt );
+end
+
+# ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
+begin
+	lowerlim = [0.0, 0.0];
+	upperlim = [Inf, 2000.0];
+	extrema3D_dict = get_extrema( nc3D_dict, var_list, lowerlim, upperlim, nc3D_list_filt );
 end
 
 # ╔═╡ 517e2adb-2fa4-4528-80a5-7de5b9b2b36d
@@ -123,7 +162,7 @@ begin
 	exp_key = nc3D_list_filt[exp_id];
 	nt = size( nc3D_dict[exp_key]["H_ice"] )[3];
 	tframes = 1:nt;
-	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, dt1D, dt3D);
+	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, 1.0, dt3D, false);
 	fig3D = init_fig( hm_plotcons );
 	axs3D = init_hm_axs(fig3D, hm_plotcons, var_list, exp_key, extrema3D_dict);
 end
@@ -147,7 +186,7 @@ md"""
 # ╔═╡ daae5d13-c460-4de4-926b-eca63f60f8b0
 begin
 	if gen_vid
-		get_hm_video( fig3D, axs3D, nc3D_dict, exp_key, var_list, hm_plotcons, extrema3D_dict, tframes, 5 )
+		get_hm_video( fig3D, axs3D, nc3D_dict, nc1D_dict, exp_key, var_list, hm_plotcons, extrema3D_dict, tframes, 5 )
 	end
 end
 
@@ -156,10 +195,13 @@ md"""
 ### Evolution Plot
 """
 
+# ╔═╡ 4481bbba-39e6-415b-b1d7-12ff78968db6
+@bind evol_var Select()
+
 # ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
 begin
-	evolhm_plotcons = InitPlotConst(2, 2, 20, (1200, 1200), colors, labels3D, dt1D, dt3D);
-	evolution_frames = collect(10:10:40)
+	evolhm_plotcons = InitPlotConst(2, 2, 20, (1200, 1200), colors, labels3D, dt1D, dt3D, false);
+	evolution_frames = collect(1:10:30)
 	evolution_hmplot(evolution_frames, evolhm_plotcons, "H_ice", exp_key, extrema3D_dict)
 end
 
@@ -207,10 +249,18 @@ plot_diffhm_3D(nc3D_dict, exp_key1, exp_key2, tframe1, tframe2, var_list, hm_plo
 # ╟─20f47d5b-7100-4c29-95b4-33a41770bcea
 # ╠═0895e44a-6894-4f1d-84fe-6f1838783b32
 # ╟─e44728c2-fd00-4f46-8af3-5552c2ce086c
+# ╠═8e0c75ef-ae2d-4a7e-8314-5521150f51ac
+# ╠═ef76d945-7388-4642-984f-58e1197e7b10
 # ╠═3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
+# ╠═e2ee4337-0251-4775-9f68-1cc3ca306b3b
 # ╠═547fcf0a-1f15-43e0-9532-be9d2cfcd175
 # ╠═4144b41b-3d5a-4dcb-9e61-5d532a3a8854
+# ╠═d3a22df5-56dd-4e54-b987-f6097e01f6bd
+# ╟─661c6c30-0650-4669-833f-885dd6cc9418
+# ╠═32271713-4f3d-4e9f-b9dc-2679bb38f821
 # ╟─0d80c308-60c1-4390-b999-ba87f62c5e67
+# ╠═d2011ce2-0e85-4a00-9a11-b12c13dbc5f7
+# ╠═496ce8cd-5d9c-4a00-95ac-f0c26aad1a84
 # ╠═a39d8efc-8f68-4a04-adbe-4c60be9b5e54
 # ╠═517e2adb-2fa4-4528-80a5-7de5b9b2b36d
 # ╠═c582d0d2-aaad-4b3f-9dc0-42f4a5f3d2c6
@@ -220,6 +270,7 @@ plot_diffhm_3D(nc3D_dict, exp_key1, exp_key2, tframe1, tframe2, var_list, hm_plo
 # ╠═7a215c7e-860b-4ee2-84de-c95404678d41
 # ╠═daae5d13-c460-4de4-926b-eca63f60f8b0
 # ╟─22394677-6c70-4b7b-a2d1-26524bbbcfbc
+# ╠═4481bbba-39e6-415b-b1d7-12ff78968db6
 # ╠═65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
 # ╟─c69d8900-4f31-4e8e-b066-219c187531b5
 # ╠═0d9e0b46-9e6b-4da0-ac99-05cfab2d4743
