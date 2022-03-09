@@ -49,7 +49,7 @@ function init_lines(
             for l in 1:length(nc_dict["nc_list"])
                 exp = nc_dict["nc_list"][l]
                 plot_var = nc_dict[exp][var][1:downsample_factor:end-1]
-                t = plotcons.dt1D * downsample_factor * 0:(length(plot_var)-1)
+                t = plotcons.dt1D .* downsample_factor .* 0:(length(plot_var)-1)
                 lines!(axs[k], t, plot_var, color = :lightgray)
             end
         end
@@ -72,13 +72,11 @@ function update_line(
         for j in 1:ncols
             k = get_k(i, j, ncols)
             var = var_list[k]
-            if plotcons.hl
-                delete!(axs[k], axs[k].scene[end])
-            end
             var_hl = var_dict[var][1:downsample_factor:end-1]
             t_hl = plotcons.dt1D * downsample_factor * 0:(length(var_hl)-1)
+
+            delete!(axs[k], axs[k].scene[end])
             lines!(axs[k], t_hl, var_hl, color = :royalblue4, line_width = 2)
-            plotcons.hl = true
         end
     end
 

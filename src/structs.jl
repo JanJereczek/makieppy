@@ -11,5 +11,4 @@ mutable struct InitPlotConst
     labels::Dict
     dt1D::Int
     dt3D::Int
-    hl::Bool
 end

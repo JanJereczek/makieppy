@@ -36,6 +36,17 @@ begin
 	include(srcdir("video.jl"));
 end
 
+# ╔═╡ 05c69dbe-df76-457d-8b4b-ed80a851656a
+md"""
+## Why Julia Instead of Python?
+
++ Pkg.jl => Easy installation.
++ Julia + Makie => Faster plotting.
++ Pluto + PlutoUI => Great widgets and improved interactivity compared to Jupyter.
++ Makie.jl => easier layout and video generation than Matplotlib.
++ Colors.jl => one-line definition of colormaps.
+"""
+
 # ╔═╡ fcc18548-3ab8-421f-b2bd-96189ae925e5
 md"""
 #### Quickactivate
@@ -104,7 +115,7 @@ begin
 	# @bind my_functions MultiCheckBox([sin, cos, tan])
 	nc1D_dict = init_dict( nc1D_list_filt );
 	nc1D_dict = load_data!( nc1D_dict, var1D_list );
-	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels1D, dt1D, dt3D, false);
+	line_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels1D, dt1D, dt3D);
 	fig1D = init_fig( line_plotcons );
 	axs1D = init_axs(fig1D, line_plotcons, var1D_list);
 end
@@ -131,7 +142,13 @@ md"""
 """
 
 # ╔═╡ 32271713-4f3d-4e9f-b9dc-2679bb38f821
-
+begin
+	nc1D_WAIS_dict = init_dict( nc1D_WAIS_list );
+	nc1D_WAIS_dict = load_data!( nc1D_WAIS_dict, ["H_ice"] );
+	avg_wdw = 10;
+	fmx_vec, a_vec, end_vec = get_final_value(nc1D_WAIS_dict, "H_ice", avg_wdw);
+	scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
+end
 
 # ╔═╡ 0d80c308-60c1-4390-b999-ba87f62c5e67
 md"""
@@ -162,7 +179,7 @@ begin
 	exp_key = nc3D_list_filt[exp_id];
 	nt = size( nc3D_dict[exp_key]["H_ice"] )[3];
 	tframes = 1:nt;
-	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, 1.0, dt3D, false);
+	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, dt1D, dt3D);
 	fig3D = init_fig( hm_plotcons );
 	axs3D = init_hm_axs(fig3D, hm_plotcons, var_list, exp_key, extrema3D_dict);
 end
@@ -200,7 +217,7 @@ md"""
 
 # ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
 begin
-	evolhm_plotcons = InitPlotConst(2, 2, 20, (1200, 1200), colors, labels3D, dt1D, dt3D, false);
+	evolhm_plotcons = InitPlotConst(2, 2, 20, (1200, 1200), colors, labels3D, dt1D, dt3D);
 	evolution_frames = collect(1:10:30)
 	evolution_hmplot(evolution_frames, evolhm_plotcons, "H_ice", exp_key, extrema3D_dict)
 end
@@ -237,6 +254,7 @@ plot_diffhm_3D(nc3D_dict, exp_key1, exp_key2, tframe1, tframe2, var_list, hm_plo
 
 
 # ╔═╡ Cell order:
+# ╟─05c69dbe-df76-457d-8b4b-ed80a851656a
 # ╟─fcc18548-3ab8-421f-b2bd-96189ae925e5
 # ╠═d617b6f2-9b90-11ec-0b63-87c241eb148b
 # ╠═761c7fa9-e262-4452-8026-1cb2aad34704

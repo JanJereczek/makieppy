@@ -43,8 +43,9 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
         yminorticks = IntervalsBetween(5),
         yminorgridvisible = true,
     )
-    shm = scatter!(ax, a, f, e, colormap = :rainbow1)
-    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{ice}(t = t_{e})$ [$10^6$ $text{km}^3$]")
+    
+    shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
+    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{ice}(t = t_{e})$ [$10^6$ cubic km]")
     return fig
 end
 
@@ -56,7 +57,7 @@ function extract_ramp_parameters(filename::String)
     return dtrmp, fmx, a
 end
 
-function get_var_value(v::Vector{String}, varname::String)
+function get_var_value(v::Vector{SubString{String}}, varname::String)
     i = findall( v .== varname )[1]
     var = string( v[ i+1 ], ".", v[ i+2 ] )
     return parse(Float64, var)
@@ -75,9 +76,10 @@ function get_final_value(
     for i in 1:n
         exp_key = list[i]
         dtrmp, fmx, a = extract_ramp_parameters(exp_key)
-        end_state = mean(nc_dict[ exp_key ][varname][(end - avg_wdw):end])
+        end_state = mean(nc_dict[ exp_key ][varname][(end - avg_wdw):(end - 1)])
         fmx_vec[i], a_vec[i], end_vec[i] = fmx, a, end_state
     end
+    return fmx_vec, a_vec, end_vec
 end
 
 
