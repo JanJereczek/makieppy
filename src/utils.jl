@@ -1,4 +1,4 @@
-
+# Get all the nc-files with a specified suffix within a folder.
 function get_nc_lists( path::String, suffix::String )
     nc_list = String[]
     wdir = walkdir(path)
@@ -12,33 +12,39 @@ function get_nc_lists( path::String, suffix::String )
     return nc_list
 end
 
-
+# Filter the file list by only choosing some of them based on index vector.
 function filter_nc_list( nc_list::Vector{String}, ixs::Vector{Int} )
     return nc_list = nc_list[ ixs ]
 end
 
-function get_k(i::Int, j::Int, nj::Int)
+# Compute k-value associated with nested i,j loop.
+function get_k( i::Int, j::Int, nj::Int )
     return (i-1)*nj + j
 end
 
-function get_var(i, j, nj, var_list)
+# Get the k-th variable.
+function get_var( i::Int, j::Int, nj::Int, var_list::Vector{String} )
     k = get_k(i, j, nj)
     return var_list[k]
 end
 
-function chop_ncfile_tail(key)
-    return chop(key, head = 0, tail = 5)    # removes "1D.nc" or "2D.nc"
+# Removes "1D.nc" or "2D.nc" in key.
+function chop_ncfile_tail( key::String )
+    return chop(key, head = 0, tail = 5)
 end
 
+# Get the key associated with an index.
 function get_key(nc_list, exp_id)
     return nc_list[exp_id]
 end
 
+# Compute the number of frames present in an experiment.
 function get_timeframes(exp_key, nc3D_dict)
 	nt = size( nc3D_dict[exp_key]["H_ice"] )[3]
     return 1:nt
 end
 
+# Save a figure in pdf, png or both.
 function save_fig(prefix, filename, extension, fig)
     if (extension == "pdf") || (extension == "both")
         save(string(prefix, filename, ".pdf"), fig)
@@ -48,6 +54,7 @@ function save_fig(prefix, filename, extension, fig)
     end
 end
 
+# Get the names of the variables in an nc-file.
 function get_vars( filename )
     NCDataset( filename ) do ds
         global vars = keys(ds)
@@ -55,18 +62,12 @@ function get_vars( filename )
     return vars
 end
 
-# function get_var_names(nc_list)
-#     return keys( nc_list[ get_key(nc_list, 1) ] )
-# end
-
-# function load_data!( var_dict::Dict , var_list::Vector{String} )
-#     for file in var_dict["nc_list"]
-#         var_dict[file] = Dict()
-#         NCDataset(file) do ds
-#             for var in var_list
-#                 var_dict[file][var] = copy(ds[var])
-#             end
-#         end
-#     end
-#     return var_dict
-# end
+# Get the timestep for a list of experiments. 
+function extract_dt( nc_dict::Dict )
+    for exp_key in nc_dict[ "nc_list" ]
+        NCDataset( exp_key ) do ds
+            nc_dict[ exp_key ][ "dt" ] = ds["time"][2] - ds["time"][1]
+        end
+    end
+    return nc_dict
+end

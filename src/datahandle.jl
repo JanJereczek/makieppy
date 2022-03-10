@@ -1,54 +1,68 @@
-using NCDatasets, Statistics;
+using NCDatasets, Statistics;       # Load nc-files, statistical computation.
 
+##########################################################
+################ Dictionary operations  ##################
+##########################################################
+# Initialise and fill a dictionary with experiment_key = filename.
 function init_dict( nc_list::Vector{String} )
-    var_dict = Dict()
-    var_dict["nc_list"] = nc_list
-    return var_dict
+    nc_dict = Dict()
+    nc_dict["nc_list"] = nc_list
+    return nc_dict
 end
 
-function load_data!( var_dict::Dict , var_list::Vector{String} )
-    for file in var_dict["nc_list"]
-        var_dict[file] = Dict()
+# Fill a dictionary with experiment_key = filename.
+function load_data!( nc_dict::Dict , var_list::Vector{String} )
+    for file in nc_dict["nc_list"]
+        nc_dict[ file ] = Dict()
         NCDataset(file) do ds
             for var in var_list
-                var_dict[file][var] = copy(ds[var])
+                nc_dict[ file ][ var ] = copy( ds[ var ] )
+            end
+            # For 2D.nc we want to compute the grounding line too!
+            if occursin.( "yelmo2D.nc", file )
+                nc_dict[ file ][ "f_grnd" ] = copy( ds[ "f_grnd" ] )
+                nc_dict[ file ][ "G" ] = similar( nc_dict[ file ][ "f_grnd" ] )
             end
         end
     end
-    return var_dict
+    return nc_dict
 end
 
-function get_extrema(var_dict, var_list, lowerlim, upperlim, exp_list)
+# Get extrema of the variables over time for 2D plots.
+function get_extrema(
+    nc_dict::Dict,
+    var_list::Vector{String},
+    lowerlim::Vector{Float},
+    upperlim::Vector{Float},
+    )
+
     extrema_dict = Dict()
-    for exp in exp_list
+    for exp in nc_dict["nc_list"]
         extrema_dict[exp] = Dict()
         i = 1
         for var in var_list
-            extr = collect(extrema(var_dict[ exp ][ var ]))
+            extr = collect(extrema(nc_dict[ exp ][ var ]))
             extrema_dict[exp][var] = tuple( max( lowerlim[i], extr[1] ), min( upperlim[i], extr[2] ) )
-            # println( extrema_dict[exp][var] )
             i += 1
         end
     end
     return extrema_dict
 end
 
-function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons)
-    fig = init_fig(plotcons)
-    ax = Axis(
-        fig[1, 1][1, 1], 
-        xlabel = L"$a$ [K/yr]",
-        ylabel = L"$\Delta T_{\max}$ [K]",
-        xscale = log10,
-        yminorticks = IntervalsBetween(5),
-        yminorgridvisible = true,
-    )
-    
-    shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
-    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{ice}(t = t_{e})$ [$10^6$ cubic km]")
-    return fig
+# Clip values for plotting.
+function clip_extrema()
 end
 
+##########################################################
+############# Ramp experiment functions   ################
+##########################################################
+# Get the value after a specified keyword in a string seperated by dots.
+function get_var_value(v::Vector{SubString{String}}, varname::String)
+    i = findall( v .== varname )[1]
+    var = string( v[ i+1 ], ".", v[ i+2 ] )
+    return parse(Float64, var)
+end
+# Get the ramp parameters out of the file name.
 function extract_ramp_parameters(filename::String)
     v = split(filename, ".")
     dtrmp = get_var_value(v, "dtrmp")
@@ -56,13 +70,7 @@ function extract_ramp_parameters(filename::String)
     a = fmx / dtrmp
     return dtrmp, fmx, a
 end
-
-function get_var_value(v::Vector{SubString{String}}, varname::String)
-    i = findall( v .== varname )[1]
-    var = string( v[ i+1 ], ".", v[ i+2 ] )
-    return parse(Float64, var)
-end
-
+# Get the final value of a specified variable.
 function get_final_value(
     nc_dict::Dict,
     varname::String,
@@ -81,10 +89,3 @@ function get_final_value(
     end
     return fmx_vec, a_vec, end_vec
 end
-
-
-# function remove_file(  )
-# end
-
-# function remove_var(  )
-# end

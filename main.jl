@@ -40,11 +40,12 @@ end
 md"""
 ## Why Julia Instead of Python?
 
-+ Pkg.jl => Easy installation.
++ Pkg.jl => Easy installation. (In future: single command installation)
 + Julia + Makie => Faster plotting.
 + Pluto + PlutoUI => Great widgets and improved interactivity compared to Jupyter.
 + Makie.jl => easier layout and video generation than Matplotlib.
 + Colors.jl => one-line definition of colormaps.
++ All of this together => ca. 400 lines of code instead of ca. 800 previously.
 """
 
 # ╔═╡ fcc18548-3ab8-421f-b2bd-96189ae925e5
@@ -144,10 +145,17 @@ md"""
 # ╔═╡ 32271713-4f3d-4e9f-b9dc-2679bb38f821
 begin
 	nc1D_WAIS_dict = init_dict( nc1D_WAIS_list );
-	nc1D_WAIS_dict = load_data!( nc1D_WAIS_dict, ["H_ice"] );
-	avg_wdw = 10;
-	fmx_vec, a_vec, end_vec = get_final_value(nc1D_WAIS_dict, "H_ice", avg_wdw);
-	scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
+	nc1D_WAIS_dict = load_data!( nc1D_WAIS_dict, ["V_ice"] );
+	avg_wdw = 1;
+	fmx_vec, a_vec, end_vec = get_final_value(nc1D_WAIS_dict, "V_ice", avg_wdw);
+	fig_tgrid = scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
+end
+
+# ╔═╡ e7f4376d-693c-4609-9d1f-0ee3c1e8a3bb
+begin
+	if true
+		save_fig(plotsdir("yelmox_v1.75/rtip/"), "grid", "both", fig_tgrid)
+	end
 end
 
 # ╔═╡ 0d80c308-60c1-4390-b999-ba87f62c5e67
@@ -161,14 +169,14 @@ md"""
 # ╔═╡ 496ce8cd-5d9c-4a00-95ac-f0c26aad1a84
 begin
 	nc3D_dict = init_dict( nc3D_list_filt );
-	nc3D_dict = load_data!( nc3D_dict, var_list );
+	nc3D_dict = load_data!( nc3D_dict, var3D_list );
 end
 
 # ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
 begin
 	lowerlim = [0.0, 0.0];
 	upperlim = [Inf, 2000.0];
-	extrema3D_dict = get_extrema( nc3D_dict, var_list, lowerlim, upperlim, nc3D_list_filt );
+	extrema3D_dict = get_extrema( nc3D_dict, var3D_list, lowerlim, upperlim, nc3D_list_filt );
 end
 
 # ╔═╡ 517e2adb-2fa4-4528-80a5-7de5b9b2b36d
@@ -181,7 +189,7 @@ begin
 	tframes = 1:nt;
 	hm_plotcons = InitPlotConst(1, 2, 20, (1200, 500), colors, labels3D, dt1D, dt3D);
 	fig3D = init_fig( hm_plotcons );
-	axs3D = init_hm_axs(fig3D, hm_plotcons, var_list, exp_key, extrema3D_dict);
+	axs3D = init_hm_axs(fig3D, hm_plotcons, var3D_list, exp_key, extrema3D_dict);
 end
 
 # ╔═╡ 916c521b-7e41-49f6-a94a-e401b09e8f3e
@@ -189,7 +197,7 @@ end
 
 # ╔═╡ ce11169d-8dc1-4d9a-85d3-ed0e68447cd7
 begin
-	fig3D_updated = update_hm_3D( fig3D, axs3D, nc3D_dict, nc1D_dict, exp_key, tframe, var_list, hm_plotcons, extrema3D_dict )
+	fig3D_updated = update_hm_3D( fig3D, axs3D, nc3D_dict, nc1D_dict, exp_key, tframe, var3D_list, hm_plotcons, extrema3D_dict )
 end
 
 # ╔═╡ da4ed259-1752-4209-b555-4ab6f1dda208
@@ -276,6 +284,7 @@ plot_diffhm_3D(nc3D_dict, exp_key1, exp_key2, tframe1, tframe2, var_list, hm_plo
 # ╠═d3a22df5-56dd-4e54-b987-f6097e01f6bd
 # ╟─661c6c30-0650-4669-833f-885dd6cc9418
 # ╠═32271713-4f3d-4e9f-b9dc-2679bb38f821
+# ╠═e7f4376d-693c-4609-9d1f-0ee3c1e8a3bb
 # ╟─0d80c308-60c1-4390-b999-ba87f62c5e67
 # ╠═d2011ce2-0e85-4a00-9a11-b12c13dbc5f7
 # ╠═496ce8cd-5d9c-4a00-95ac-f0c26aad1a84

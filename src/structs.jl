@@ -1,7 +1,4 @@
-##########################################################
-################ Struct Construction  ####################
-##########################################################
-
+# Store the plotting constants in a struct.
 mutable struct InitPlotConst
     nrows::Int
     ncols::Int

@@ -1,13 +1,13 @@
-using CairoMakie;
+using CairoMakie;   # Our bread and butter.
 
 ##########################################################
 ############## Initialisation Functions ##################
 ##########################################################
-
+# Initialise any figure with latex font and pre-defined resolution and fontsize.
 function init_fig(plotcons::Any)
     return Figure(resolution = plotcons.resolution, font = "cmunrm.ttf", fontsize = plotcons.fontsize)
 end
-
+# Initialise nrows*ncols axis for plotting 1D variables.
 function init_axs(fig::Figure, plotcons::Any, var_list::Vector{String})
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(
@@ -21,16 +21,18 @@ function init_axs(fig::Figure, plotcons::Any, var_list::Vector{String})
         ) for j in 1:ncols, i in 1:nrows]
     return axs
 end
-
+# Initalise nrows*ncols axis for plotting heatmaps of the 3D variables.
 function init_hm_axs(fig::Figure, plotcons::Any, var_list::Vector{String}, exp_key::String, extrema_dict::Dict)
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(fig[i, j][1, 1], title = plotcons.labels[get_var(i, j, ncols, var_list)] ) for j in 1:ncols, i in 1:nrows]
     cbs = [Colorbar(fig[i, j][1, 2], colormap = plotcons.colors[get_var(i, j, ncols, var_list)], limits = extrema_dict[exp_key][get_var(i, j, ncols, var_list)] ) for j in 1:ncols, i in 1:nrows]
+    # get_crrnt_grline( nc_dict::Dict, key, frame )
+    # get_ref_grline!( pd_dict::Dict )
     return axs
 end
 
 ##########################################################
-################## Update Functions ######################
+##################### 1D Plotting ########################
 ##########################################################
 
 function init_lines(
@@ -83,6 +85,10 @@ function update_line(
     return fig
 end
 
+##########################################################
+##################### 3D Plotting ########################
+##########################################################
+# 3D: 2D plots over time!
 function update_hm_3D(
     fig::Figure,
     axs, 
@@ -150,5 +156,25 @@ function evolution_hmplot(frames::Vector{Int}, plotcons::Any, var::String, exp_k
         end
     end
     Colorbar(fig[:, ncols+1][1, 1], colormap = plotcons.colors[var], limits = extrema_dict[exp_key][var] )
+    return fig
+end
+
+##########################################################
+################## R-Tipping Plotting ####################
+##########################################################
+
+function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons)
+    fig = init_fig(plotcons)
+    ax = Axis(
+        fig[1, 1][1, 1], 
+        xlabel = L"$a$ [K/yr]",
+        ylabel = L"$\Delta T_{\max}$ [K]",
+        xscale = log10,
+        yminorticks = IntervalsBetween(5),
+        yminorgridvisible = true,
+    )
+    
+    shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
+    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{ice}(t = t_{e})$ [$10^6$ cubic km]")
     return fig
 end
