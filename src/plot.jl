@@ -12,10 +12,10 @@ function init_axs(fig::Figure, plotcons::Any, var_list::Vector{String})
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(
         fig[i, j][1, 1],
-        xlabel = L"$t$ [yr]",
+        xlabel = L"$t$ [kyr]",
         ylabel = plotcons.labels[get_var(i, j, ncols, var_list)],
-        xminorticks = IntervalsBetween(5),
-        yminorticks = IntervalsBetween(4),
+        xminorticks = IntervalsBetween(10),
+        yminorticks = IntervalsBetween(10),
         xminorgridvisible = true,
         yminorgridvisible = true,
         ) for j in 1:ncols, i in 1:nrows]
@@ -51,7 +51,7 @@ function init_lines(
             for l in 1:length(nc_dict["nc_list"])
                 exp = nc_dict["nc_list"][l]
                 plot_var = nc_dict[exp][var][1:downsample_factor:end-1]
-                t = plotcons.dt1D .* downsample_factor .* 0:(length(plot_var)-1)
+                t = plotcons.dt1D .* downsample_factor .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
                 lines!(axs[k], t, plot_var, color = :lightgray)
             end
         end
@@ -75,7 +75,7 @@ function update_line(
             k = get_k(i, j, ncols)
             var = var_list[k]
             var_hl = var_dict[var][1:downsample_factor:end-1]
-            t_hl = plotcons.dt1D * downsample_factor * 0:(length(var_hl)-1)
+            t_hl = plotcons.dt1D .* downsample_factor .* ( 0:(length(var_hl)-1) ) ./ 1e3 # kyr
 
             delete!(axs[k], axs[k].scene[end])
             lines!(axs[k], t_hl, var_hl, color = :royalblue4, line_width = 2)
@@ -145,7 +145,7 @@ function plot_diffhm_3D(
     return fig
 end
 
-function evolution_hmplot(frames::Vector{Int}, plotcons::Any, var::String, exp_key::String, extrema_dict::Dict)
+function evolution_hmplot(nc3D_dict::Dict, frames::Vector{Int}, plotcons::Any, var::String, exp_key::String, extrema_dict::Dict)
     fig = init_fig(plotcons)
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(fig[i, j][1, 1], title = L"$t = $ %$(string( plotcons.dt3D * frames[ get_k(i, j, ncols) ] )) yr" ) for j in 1:ncols, i in 1:nrows]
@@ -163,7 +163,7 @@ end
 ################## R-Tipping Plotting ####################
 ##########################################################
 
-function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons)
+function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons, year::Int)
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1][1, 1], 
@@ -176,5 +176,18 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
     
     shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
     Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{ice}(t = t_{e})$ [$10^6$ cubic km]")
+    scatter_ssp( fig, ax, year, "industrial" )
     return fig
+end
+
+function scatter_ssp( fig, ax, year, reference )
+    s = load_ssp()
+    ΔT, a = get_ssp( s, year, reference )
+
+    clrs = [:darkorange, :red2, :darkred]
+    l = [string("SSP2-", year) , string("SSP3-", year), string("SSP5-", year)]
+    for i in 1:length(l)
+        scatter!(ax, [a[i]], [ΔT[i]], color = clrs[i], markersize = 15, label = l[i])
+    end
+    axislegend("SSP Scenario-Year", position = :lb)
 end

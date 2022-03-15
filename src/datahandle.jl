@@ -1,4 +1,4 @@
-using NCDatasets, Statistics;       # Load nc-files, statistical computation.
+using NCDatasets, Statistics, CSV, DataFrames, Interpolations
 
 ##########################################################
 ################ Dictionary operations  ##################
@@ -13,13 +13,31 @@ end
 # Fill a dictionary with experiment_key = filename.
 function load_data!( nc_dict::Dict , var_list::Vector{String} )
     for file in nc_dict["nc_list"]
-        nc_dict[ file ] = Dict()
+        if !( file in keys(nc_dict) )   # Only initialise if non-existing.
+            nc_dict[ file ] = Dict()
+        end
         NCDataset(file) do ds
             for var in var_list
-                nc_dict[ file ][ var ] = copy( ds[ var ] )
+                println(var)
+                if !( var in keys(nc_dict[ file ]) )   # Only load if empty.
+                    nc_dict[ file ][ var ] = copy( ds[ var ] )
+                end
             end
-            # For 2D.nc we want to compute the grounding line too!
-            if occursin.( "yelmo2D.nc", file )
+            # # For 2D.nc we want to compute the grounding line too!
+            # if occursin.( "yelmo2D.nc", file )
+            #     nc_dict[ file ][ "f_grnd" ] = copy( ds[ "f_grnd" ] )
+            #     nc_dict[ file ][ "G" ] = similar( nc_dict[ file ][ "f_grnd" ] )
+            # end
+        end
+    end
+    return nc_dict
+end
+
+# Initialise the grounding line computation by loading the needed variable.
+function init_grline!( nc_dict::Dict )
+    for file in nc_dict["nc_list"]
+        NCDataset(file) do ds
+            if !( "f_grnd" in keys(nc_dict[ file ]) )   # Only load if empty.
                 nc_dict[ file ][ "f_grnd" ] = copy( ds[ "f_grnd" ] )
                 nc_dict[ file ][ "G" ] = similar( nc_dict[ file ][ "f_grnd" ] )
             end
@@ -32,8 +50,8 @@ end
 function get_extrema(
     nc_dict::Dict,
     var_list::Vector{String},
-    lowerlim::Vector{Float},
-    upperlim::Vector{Float},
+    lowerlim::Vector{Float64},
+    upperlim::Vector{Float64},
     )
 
     extrema_dict = Dict()
@@ -65,16 +83,21 @@ end
 # Get the ramp parameters out of the file name.
 function extract_ramp_parameters(filename::String)
     v = split(filename, ".")
-    dtrmp = get_var_value(v, "dtrmp")
     fmx = get_var_value(v, "fmx")
-    a = fmx / dtrmp
-    return dtrmp, fmx, a
+    if "dtrmp" in v
+        dtrmp = get_var_value(v, "dtrmp")
+        a = fmx / dtrmp
+    elseif "dfdtmx" in v
+        a = get_var_value(v, "dfdtmx")
+    end
+    return fmx, a
 end
 # Get the final value of a specified variable.
 function get_final_value(
     nc_dict::Dict,
     varname::String,
     avg_wdw::Int,
+    final_frame::Int,
     )
 
     list = nc_dict["nc_list"]
@@ -83,9 +106,39 @@ function get_final_value(
 
     for i in 1:n
         exp_key = list[i]
-        dtrmp, fmx, a = extract_ramp_parameters(exp_key)
-        end_state = mean(nc_dict[ exp_key ][varname][(end - avg_wdw):(end - 1)])
+        fmx, a = extract_ramp_parameters(exp_key)
+        end_state = mean(nc_dict[ exp_key ][varname][(final_frame - avg_wdw):(final_frame - 1)])
         fmx_vec[i], a_vec[i], end_vec[i] = fmx, a, end_state
     end
     return fmx_vec, a_vec, end_vec
+end
+##########################################################
+############# Ramp experiment functions   ################
+##########################################################
+# 
+function load_ssp()
+    ssp_dict = Dict()
+    names = ["SSP2", "SSP3", "SSP5", "History"]
+    for name in names
+        println(name)
+        ssp_dict[ name ] = DataFrame( CSV.File( string("data/SSP/", name, ".csv" ) ) )
+        ssp_dict[ string(name, "_interp") ] = LinearInterpolation( ssp_dict[ name ][:, 1], ssp_dict[ name ][:, 2] )
+    end
+    return ssp_dict
+end
+# Get forcing and mean rate for a given year
+function get_ssp( s, year, reference )
+
+    if reference == "industrial"
+        ref_year = 2000
+        ref = s["History_interp"](ref_year)
+    elseif reference == "pre-industrial"
+        ref_year = 1850
+        ref = 0
+    end
+    
+    proj = [ s["SSP2_interp"](year), s["SSP3_interp"](year), s["SSP5_interp"](year) ]
+    ΔT = proj .- ref
+    a = ΔT ./ ( year-ref_year )
+    return ΔT, a
 end

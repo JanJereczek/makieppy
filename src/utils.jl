@@ -56,10 +56,11 @@ end
 
 # Get the names of the variables in an nc-file.
 function get_vars( filename )
+    tmp = Dict()
     NCDataset( filename ) do ds
-        global vars = keys(ds)
+        tmp["var_names"] = keys(ds)
     end
-    return vars
+    return tmp["var_names"]
 end
 
 # Get the timestep for a list of experiments. 
@@ -70,4 +71,13 @@ function extract_dt( nc_dict::Dict )
         end
     end
     return nc_dict
+end
+
+function get_ncols(list::Vector{String}, nrows::Int)
+    n = length(list)
+    return Int(ceil(n / nrows))
+end
+
+function get_resolution( nrows::Int, ncols::Int, base::Int)
+    return ncols*base, nrows*base
 end
