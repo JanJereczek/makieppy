@@ -84,7 +84,7 @@ begin
 	# ixs = collect(1:3);
 	# ixs = [1];
 	# exp_type = "aqef_retreat/";
-	exp_type = "ramp2/";
+	exp_type = "ramp3";
 	path = string("/media/Data/Jan/yelmox_v1.75/", exp_type);
 	nc1D_list = get_nc_lists(path, "yelmo1D.nc");
 	nc1D_WAIS_list = get_nc_lists(path, "yelmo1D_WAIS.nc");
@@ -158,12 +158,12 @@ To speed up the plotting procedure, one can choose a downsampling factor:
 """
 
 # ╔═╡ 1fb29956-ef45-48b5-99fa-9c3660f79371
-@bind downsample_factor confirm( NumberField(10:10:100, default=100) )
+@bind downsample_factor confirm( NumberField( 1:100, default=1) )
 
 # ╔═╡ 3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 begin
-	dt1D = 1;
-	dt3D = 1000;
+	dt1D = get_dt( nc1D_list );
+	dt3D = get_dt( nc3D_list );
 	load_data!( nc1D_dict, var1D_list );
 	line_plotcons = InitPlotConst(nrows1D, ncols1D, 20, rsl, colors, labels1D, dt1D, dt3D);
 	fig1D = init_fig( line_plotcons );
@@ -176,8 +176,22 @@ init_lines(axs1D, nc1D_dict, var1D_list, line_plotcons, downsample_factor)
 # ╔═╡ 547fcf0a-1f15-43e0-9532-be9d2cfcd175
 @bind hl_ix Select(ixs, default = 1)
 
+# ╔═╡ e731a859-ff2a-4168-b11f-4aa72b625e02
+extract_ramp_parameters( nc1D_list[hl_ix] )
+
+# ╔═╡ 2901c7d0-1224-44e0-b852-56787089a926
+nc1D_dict[ nc1D_list[hl_ix] ][ "hyst_f_now" ][end]
+
 # ╔═╡ 4144b41b-3d5a-4dcb-9e61-5d532a3a8854
 update_line(fig1D, axs1D, nc1D_dict, var1D_list, line_plotcons, hl_ix, downsample_factor)
+
+# ╔═╡ 30140890-21ec-4084-97ca-dfef34c843c6
+md"""
+You can set the name of the target file for saving the plot:
+"""
+
+# ╔═╡ 854d7168-bed7-4d14-8939-035df6f7ddac
+@bind name_AIS_1D TextField(default = "AIS_1D")
 
 # ╔═╡ 55803f22-a1f5-49cf-bfad-867794eed0ee
 md"""
@@ -190,7 +204,7 @@ To save the figure, simply tick the following checkbox. Note that if not unticke
 # ╔═╡ b81908a7-fe95-46c0-84bb-7f5a16c29e05
 begin
 	if save1
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), "1D", "both", fig1D)
+		save_fig(plotsdir( string("yelmox_v1.75/", exp_type )), name_AIS_1D, "both", fig1D)
 	end
 end
 
@@ -225,12 +239,12 @@ begin
 		avg_wdw = 2;
 		fmx_vec, a_vec, end_vec = get_final_value(nc1D_WAIS_dict, "V_ice", avg_wdw, tip_frame);
 		extrema(end_vec)
-		fig_tgrid = scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons, 2080);
+		fig_tgrid, ax_tgrid = scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
+		# scatter_ssp( ax, year, "industrial" )
+		scatter_ssp_path( ax_tgrid, 2050, 2080, 10, "industrial" )
+		fig_tgrid
 	end
 end
-
-# ╔═╡ f6be0066-4674-42a5-9986-5126d055acc7
-
 
 # ╔═╡ fda9b297-43ad-4456-8af4-d389058ed6ac
 md"""
@@ -269,6 +283,9 @@ end
 
 # ╔═╡ 7c37756b-3bd9-4716-8be4-f99cf025ca70
 @bind hl_ix_WAIS Select(ixs, default = 1)
+
+# ╔═╡ bf5467bc-7e8b-4dec-b9ed-ef0b3f0cb092
+extract_ramp_parameters( nc1D_list[hl_ix_WAIS] )
 
 # ╔═╡ 04bb319e-bb36-4480-9ab0-130965407f0c
 update_line(fig1D_WAIS, axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons, hl_ix_WAIS, downsample_factor)
@@ -483,11 +500,15 @@ end
 # ╠═1fb29956-ef45-48b5-99fa-9c3660f79371
 # ╠═3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 # ╠═e2ee4337-0251-4775-9f68-1cc3ca306b3b
-# ╠═547fcf0a-1f15-43e0-9532-be9d2cfcd175
+# ╟─547fcf0a-1f15-43e0-9532-be9d2cfcd175
+# ╟─e731a859-ff2a-4168-b11f-4aa72b625e02
+# ╟─2901c7d0-1224-44e0-b852-56787089a926
 # ╠═4144b41b-3d5a-4dcb-9e61-5d532a3a8854
+# ╟─30140890-21ec-4084-97ca-dfef34c843c6
+# ╟─854d7168-bed7-4d14-8939-035df6f7ddac
 # ╟─55803f22-a1f5-49cf-bfad-867794eed0ee
 # ╟─5a240e0b-52f7-4a02-b79b-087f2d3c5f39
-# ╟─b81908a7-fe95-46c0-84bb-7f5a16c29e05
+# ╠═b81908a7-fe95-46c0-84bb-7f5a16c29e05
 # ╟─661c6c30-0650-4669-833f-885dd6cc9418
 # ╟─710603db-6bad-4bf8-b831-9c913f48949d
 # ╠═2b1d04d9-ebec-475d-98eb-34eaff147759
@@ -495,15 +516,15 @@ end
 # ╠═e9187f69-b2d7-42ee-939b-edcdd5bff67b
 # ╠═616e2fc6-27a5-43d3-a4e1-70d4659cef7e
 # ╠═aac3fb96-b0a4-435f-9ce4-478de1c2d8fe
-# ╠═f6be0066-4674-42a5-9986-5126d055acc7
 # ╟─fda9b297-43ad-4456-8af4-d389058ed6ac
-# ╟─3402fdfc-d227-471f-839f-b405a4a0f06a
+# ╠═3402fdfc-d227-471f-839f-b405a4a0f06a
 # ╟─b463897f-056e-4291-85e4-6fda689ba21d
 # ╟─6f653476-791d-42c4-928c-ccad121373d1
 # ╠═ff9dc3bd-4229-4898-9e19-e8c658fb279a
 # ╟─6c661771-46c0-48ae-825d-945aa350fe8d
 # ╠═10ce2861-9524-4f01-9471-5108686d1cd3
 # ╠═7c37756b-3bd9-4716-8be4-f99cf025ca70
+# ╠═bf5467bc-7e8b-4dec-b9ed-ef0b3f0cb092
 # ╠═04bb319e-bb36-4480-9ab0-130965407f0c
 # ╟─f8c289d4-6aca-41a1-ae9a-ea97e3671d7f
 # ╟─e8f3c2bf-fc73-4dcc-982d-975e1031ff2e

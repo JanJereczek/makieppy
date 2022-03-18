@@ -1,5 +1,15 @@
 using NCDatasets, Statistics, CSV, DataFrames, Interpolations
 
+
+function get_dt( nc_list )
+    file = nc_list[ 1 ]
+    NCDataset(file) do ds
+        global dt = ds[ "time" ][ 2 ] - ds[ "time" ][ 1 ]
+    end
+    println(dt)
+    return dt
+end
+
 ##########################################################
 ################ Dictionary operations  ##################
 ##########################################################
@@ -18,7 +28,6 @@ function load_data!( nc_dict::Dict , var_list::Vector{String} )
         end
         NCDataset(file) do ds
             for var in var_list
-                println(var)
                 if !( var in keys(nc_dict[ file ]) )   # Only load if empty.
                     nc_dict[ file ][ var ] = copy( ds[ var ] )
                 end
@@ -119,8 +128,8 @@ end
 function load_ssp()
     ssp_dict = Dict()
     names = ["SSP2", "SSP3", "SSP5", "History"]
+    ssp_dict["names"] = names
     for name in names
-        println(name)
         ssp_dict[ name ] = DataFrame( CSV.File( string("data/SSP/", name, ".csv" ) ) )
         ssp_dict[ string(name, "_interp") ] = LinearInterpolation( ssp_dict[ name ][:, 1], ssp_dict[ name ][:, 2] )
     end

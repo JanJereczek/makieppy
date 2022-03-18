@@ -163,7 +163,7 @@ end
 ################## R-Tipping Plotting ####################
 ##########################################################
 
-function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons, year::Int)
+function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons)
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1][1, 1], 
@@ -176,11 +176,10 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
     
     shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
     Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{ice}(t = t_{e})$ [$10^6$ cubic km]")
-    scatter_ssp( fig, ax, year, "industrial" )
-    return fig
+    return fig, ax
 end
 
-function scatter_ssp( fig, ax, year, reference )
+function scatter_ssp_point( ax, year, reference )
     s = load_ssp()
     ΔT, a = get_ssp( s, year, reference )
 
@@ -190,4 +189,26 @@ function scatter_ssp( fig, ax, year, reference )
         scatter!(ax, [a[i]], [ΔT[i]], color = clrs[i], markersize = 15, label = l[i])
     end
     axislegend("SSP Scenario-Year", position = :lb)
+end
+
+function scatter_ssp_path( ax, lb, ub, Δyr, reference )
+
+    s = load_ssp()
+    nscenarios = length( s["names"] ) - 1   # Historic record is not a scenario, therefore: -1
+    years = lb:Δyr:ub
+    nyears = length(years)
+
+    ΔT_mat, a_mat = zeros( nscenarios, nyears ), zeros( nscenarios, nyears )
+    for i in 1:nyears
+        year = years[i]
+        ΔT_mat[:, i], a_mat[:, i] = get_ssp( s, year, reference )
+    end
+
+    clrs = [:darkorange, :red2, :darkred]
+    yrlbl = string(lb, " to ", ub)
+    l = [string("SSP2: ", yrlbl) , string("SSP3: ", yrlbl), string("SSP5: ", yrlbl)]
+    for i in 1:length(l)
+        scatterlines!(ax, a_mat[i, :], ΔT_mat[i, :], color = clrs[i], markersize = range(10, stop = 20, length = nyears), label = l[i])
+    end
+    axislegend("SSP Scenario: Time Span", position = :lb)
 end

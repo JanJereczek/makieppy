@@ -2,18 +2,53 @@
 # 1D:
 function load_1Dlabels(vars)
     l = Dict()
-    l["A_ice"] = L"$A_{ice}$ []"
-    l["A_ice_f"] = L"$A_{ice,f}$ []"
-    l["A_ice_g"] = L"$A_{ice,g}$ []"
-    l["H_ice"] = L"$H_{ice}$ []"
-    l["H_ice_f"] = L"$H_{ice,f}$ []"
-    l["H_ice_g"] = L"$A_{ice,g}$ []"
-    l["H_ice_max"] = L"$H_{ice, max}$ []"
-    l["H_w"] = L"$H_{w}$ []"
+    # Uppercase
+    l["A_ice"] = L"$A_{ice}$ [$10^6$ square km]"
+    l["A_ice_f"] = L"$A_{ice,f}$ [$10^6$ square km]"
+    l["A_ice_g"] = L"$A_{ice,g}$ [$10^6$ square km]"
+    l["H_ice"] = L"$H_{ice}$ [m]"
+    l["H_ice_f"] = L"$H_{ice,f}$ [m]"
+    l["H_ice_g"] = L"$A_{ice,g}$ [m]"
+    l["H_ice_max"] = L"$H_{ice, max}$ [m]"
+    l["H_w"] = L"$H_{w}$ [m]"
+    l["T_shlf"] = L"$T_{shlf}$ [K]"
+    l["T_srf"] = L"$T_{srf}$ [K]"
+    l["V_dT"] = L"$V_{T}$ []"
     l["V_ice"] = L"$V_{ice}$ [$10^6$ cubic km]"
+    l["V_ice_f"] = L"$V_{ice,f}$ [$10^6$ cubic km]"
+    l["V_ice_g"] = L"$V_{ice,g}$ [$10^6$ cubic km]"
+    l["V_sl"] = L"$V_{ice,sl}$ [$10^6$ cubic km]"
+
+    # Lowercase
+    l["bmb"] = L"$\frac{d m}{d t}_{base}$ [m/a]"
+    l["bmb_g"] = L"$\frac{d m}{d t}_{base,g}$ [m/a]"
+    l["bmb_shlf"] = L"$\frac{d m}{d t}_{base,shlf}$ [m/a]"
+    l["dHicedt"] = L"$\frac{d H}{d t}$ [m/a]"
+    l["dVicedt"] = L"$\frac{d V}{d t}$ [$10^{-3}$ [cubic km/a]"
+    l["dzsrfdt"] = L"$\frac{d z_{srf}}{d t}$ [m/a]"
+    l["f_pmp"] = L"$f_{pmp}$ [1]"
+    l["fwf"] = L"$fwf$ [Sv]"
+    # l["hyst_df_dt"] = L"$\frac{d m}{d t}_{base}$ [1]"
+    # l["hyst_dv_dt"] = L"$\frac{d m}{d t}_{base}$ [1]"
     l["hyst_f_now"] = L"$\Delta T$ [K]"
-    l["bmb"] = L"$\frac{d m}{d t}_{base}$ [1]"
-    l["smb"] = L"$\frac{d m}{d t}_{surf}$ [1]"
+    l["smb"] = L"$\frac{d m}{d t}_{surf}$ [m/a]"
+    l["time"] = L"$t$ [a]"
+    l["uxy_b"] = L"$u_{xy,b}$ [m/a]"
+    l["uxy_b_f"] = L"$u_{xy,b,f}$ [m/a]"
+    l["uxy_b_g"] = L"$u_{xy,b,g}$ [m/a]"
+    l["uxy_bar"] = L"$\bar{u}_{xy}$ [m/a]"
+    l["uxy_bar_f"] = L"$\bar{u}_{xy,f}$ [m/a]"
+    l["uxy_bar_g"] = L"$\bar{u}_{xy,g}$ [m/a]"
+    l["uxy_s"] = L"$u_{xy,s}$ [m/a]"
+    l["uxy_s_f"] = L"$u_{xy,s,f}$ [m/a]"
+    l["uxy_s_g"] = L"$u_{xy,s,g}$ [m/a]"
+    # l["xc"] = L"$\frac{d m}{d t}_{base}$ [1]"
+    # l["yc"] = L"$\frac{d m}{d t}_{base}$ [1]"
+    l["z_bed"] = L"$z_{bed}$ [m]"
+    l["z_sl"] = L"$z_{sl}$ [m]"
+    l["z_srf"] = L"$z_{srf}$ [m]"
+    l["z_srf_g"] = L"$z_{srf,g}$ [m]"
+    # l["zeta"] = L"$\frac{d m}{d t}_{base}$ [1]"
 
     defined = keys(l)
     for var in vars
@@ -28,7 +63,22 @@ end
 function load_3Dlabels(vars)
     l = Dict()
     l["H_ice"] = L"$H_{ice}$ [m]"
+    l["H_ice_pd_err"] = L"$\DeltaH_{ice}$ [m]"
+    l["N_eff"] = L"$N_{eff}$ [bar]"
+    l["T_srf"] = L"$T_{srf}$ [K]"
+    l["Ta_ann"] = L"$\DeltaT_{a}$ [K]"
+
+    l["bmb"] = L"$\frac{d m}{d t}_{base}$ [m/a]"
+    l["calv"] = L"$\frac{d m}{d t}_{calv}$ [m/a]"
+    l["f_grnd"] = L"$f_{grnd}$ [1]"
+    l["f_ice"] = L"$f_{ice}$ [1]"
+    l["mb_applied"] = L"$\frac{d m}{d t}$ [m/a]"
+    l["smb"] = L"$\frac{d m}{d t}_{surf}$ [m/a]"
     l["uxy_s"] = L"$u_{xy,s}$ [m/s]"
+    l["uxy_s_pd_err"] = L"$\Deltau_{xy,s}$ [m/s]"
+    l["visc_eff_int"] = L"$visc_{eff,int}$ [Pa $\cdot$ a $\cdot$ m]"
+    l["z_bed"] = L"$z_{bed}$ [m]"
+    l["z_srf"] = L"$z_{srf}$ [m]"
 
     defined = keys(l)
     for var in vars
