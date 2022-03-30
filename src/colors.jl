@@ -5,7 +5,10 @@ using Colors
 function load_colors(vars)
     c = Dict()
     c["H_ice"] = cgrad(:ice, 15, categorical = true, rev = true, scale = :exp)
-    c["uxy_s"] = cgrad(:dense, 15, categorical = true, scale = :exp)
+    # c["z_srf"] = cgrad([:white, :ice], 15, categorical = true, rev = true, scale = :exp)
+    c["z_srf"] = cgrad([:royalblue4, :royalblue, :steelblue2, :azure], scale = :exp)
+    c["uxy_s"] = cgrad(:dense, scale = :exp)
+    # c["uxy_s"] = cgrad(:dense, 15, categorical = true, scale = :exp)
 
     defined = keys(c)
     for var in vars

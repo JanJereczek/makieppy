@@ -12,7 +12,7 @@ function init_axs(fig::Figure, plotcons::Any, var_list::Vector{String})
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(
         fig[i, j][1, 1],
-        xlabel = L"$t$ [kyr]",
+        xlabel = (i == nrows) ? L"$t$ [kyr]" : " ",
         ylabel = plotcons.labels[get_var(i, j, ncols, var_list)],
         xminorticks = IntervalsBetween(10),
         yminorticks = IntervalsBetween(10),
@@ -24,8 +24,17 @@ end
 # Initalise nrows*ncols axis for plotting heatmaps of the 3D variables.
 function init_hm_axs(fig::Figure, plotcons::Any, var_list::Vector{String}, exp_key::String, extrema_dict::Dict)
     nrows, ncols = plotcons.nrows, plotcons.ncols
-    axs = [Axis(fig[i, j][1, 1], title = plotcons.labels[get_var(i, j, ncols, var_list)] ) for j in 1:ncols, i in 1:nrows]
-    cbs = [Colorbar(fig[i, j][1, 2], colormap = plotcons.colors[get_var(i, j, ncols, var_list)], limits = extrema_dict[exp_key][get_var(i, j, ncols, var_list)] ) for j in 1:ncols, i in 1:nrows]
+    axs = [Axis(fig[i, j][1, 1], aspect=DataAspect() ) for j in 1:ncols, i in 1:nrows]
+    cbs = [Colorbar(
+        fig[i, j][1, 2],
+        colormap = plotcons.colors[get_var(i, j, ncols, var_list)],
+        limits = extrema_dict[exp_key][get_var(i, j, ncols, var_list)],
+        height = Relative(3/4),
+        label = plotcons.labels[get_var(i, j, ncols, var_list)],
+        lowclip = :white) for j in 1:ncols, i in 1:nrows]
+    for ax in axs
+        hidedecorations!(ax)
+    end
     # get_crrnt_grline( nc_dict::Dict, key, frame )
     # get_ref_grline!( pd_dict::Dict )
     return axs
@@ -85,6 +94,42 @@ function update_line(
     return fig
 end
 
+function get_bifurcation_diagram(ncAIS, ncWAIS, plotcons)
+    exp_key_AIS = ncAIS[ "nc_list" ][1]
+    exp_key_WAIS = ncWAIS[ "nc_list" ][1]
+    fig = init_fig(plotcons)
+    ax = Axis(
+        fig[1, 1], 
+        xlabel = L"$\Delta T$ [K]", 
+        ylabel = L"$V_{sle}$ [m]",
+        xminorticks = IntervalsBetween(10),
+        yminorticks = IntervalsBetween(10),
+        xminorgridvisible = true,
+        yminorgridvisible = true,
+    )
+
+    f = ncAIS[exp_key_AIS]["hyst_f_now"]
+    V = ncWAIS[exp_key_WAIS]["V_sle"]
+    lines!(ax, f, V)
+    return fig
+end
+
+function plot_control(plotcons, nc_dict)
+    var_list = ["hyst_f_now", "V_ice"]
+
+    fig_ctrl = init_fig( plotcons )
+	axs_ctrl = init_axs(fig_ctrl, plotcons, var_list)
+    tend = 5000
+    nt = Int(tend / plotcons.dt1D) + 1
+    t = range(0, stop=tend, length=nt) ./ 1e3
+    lines!(axs_ctrl[1], t, nc_dict[ nc_dict["nc_list"][ 1 ] ][var_list[1]][1:nt])
+    lines!(axs_ctrl[2], t, nc_dict[ nc_dict["nc_list"][ 1 ] ][var_list[2]][1:nt], label = "Yelmo")
+    hlines!(axs_ctrl[2], [26.5], color = :red, label = "Present-day observation")
+    axislegend(position = :lb)
+    ylims!(axs_ctrl[2], (20, 27))
+    return fig_ctrl
+end
+
 ##########################################################
 ##################### 3D Plotting ########################
 ##########################################################
@@ -105,7 +150,13 @@ function update_hm_3D(
     for i in 1:nrows
         for j in 1:ncols
             k = get_k(i, j, ncols)
-            heatmap!( axs[k], nc_dict[ exp_key ][ var_list[k] ][:, :, tframe], colorrange = extrema_dict[exp_key][var_list[k]] , colormap = plotcons.colors[ var_list[k] ])
+            heatmap!(
+                axs[k],
+                nc_dict[ exp_key ][ var_list[k] ][:, :, tframe],
+                colorrange = extrema_dict[exp_key][var_list[k]] ,
+                colormap = plotcons.colors[ var_list[k] ],
+                lowclip = :white,
+            )
         end
     end
 
@@ -136,6 +187,7 @@ function plot_diffhm_3D(
     for i in 1:nrows
         for j in 1:ncols
             k = get_k(i, j, ncols)
+            hidedecorations!(axs[k])
             diff = nc_dict[ exp_key1 ][ var_list[k] ][:, :, tframe1] - nc_dict[ exp_key2 ][ var_list[k] ][:, :, tframe2]
             diff[1, 1] +=  1e-3     # avoid 0 differences for colorbar generation
             hm = heatmap!( axs[k], diff , colormap = plotcons.colors[ var_list[k] ])
@@ -152,10 +204,17 @@ function evolution_hmplot(nc3D_dict::Dict, frames::Vector{Int}, plotcons::Any, v
     for i in 1:nrows
         for j in 1:ncols
             k = get_k(i, j, ncols)
-            heatmap!( axs[k], nc3D_dict[exp_key][var][:, :, frames[k]], colorrange = extrema_dict[exp_key][var] , colormap = plotcons.colors[ var ])
+            hidedecorations!(axs[k])
+            heatmap!(
+                axs[k],
+                nc3D_dict[exp_key][var][:, :, frames[k]],
+                colorrange = extrema_dict[exp_key][var],
+                colormap = plotcons.colors[ var ],
+                lowclip = :white,
+            )
         end
     end
-    Colorbar(fig[:, ncols+1][1, 1], colormap = plotcons.colors[var], limits = extrema_dict[exp_key][var] )
+    Colorbar(fig[:, ncols+1][1, 1], colormap = plotcons.colors[var], limits = extrema_dict[exp_key][var], height = Relative(1/2), lowclip = :white, label = plotcons.labels[var])
     return fig
 end
 
@@ -175,7 +234,38 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
     )
     
     shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
-    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{ice}(t = t_{e})$ [$10^6$ cubic km]")
+    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{sle}(t = t_{e})$ [$10^6$ cubic km]")
+    return fig, ax
+end
+
+function hm_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons)
+    f_ext_nontipped = f .- 0.599
+    e_ext_nontipped = maximum(e) .* ones( size(f_ext_nontipped) )
+    a_ext_nontipped = a
+
+    f_ext_tipped = f .+ 0.599
+    e_ext_tipped = minimum(e) .* ones( size(f_ext_nontipped) )
+    a_ext_tipped = a
+
+    fig = init_fig(plotcons)
+    ax = Axis(
+        fig[1, 1][1, 1], 
+        xlabel = L"$a$ [K/yr]",
+        ylabel = L"$\Delta T$ [K]",
+        xscale = log10,
+        yminorticks = IntervalsBetween(5),
+        yminorgridvisible = true,
+    )
+    myblue = cgrad([:plum2, :lightblue1])
+    # shm = heatmap!( ax, a, f, e, colormap = cgrad(:Blues_3, rev = true) )
+    # heatmap!( ax, a_ext_nontipped, f_ext_nontipped, e_ext_nontipped, colormap = cgrad(:Blues_3, rev = true), colorrange = extrema(e) )
+    # heatmap!( ax, a_ext_tipped, f_ext_tipped, e_ext_tipped, colormap = cgrad(:Blues_3, rev = true), colorrange = extrema(e) )
+    shm = heatmap!( ax, a, f, e, colormap = myblue )
+    heatmap!( ax, a_ext_nontipped, f_ext_nontipped, e_ext_nontipped, colormap = myblue, colorrange = extrema(e) )
+    heatmap!( ax, a_ext_tipped, f_ext_tipped, e_ext_tipped, colormap = myblue, colorrange = extrema(e) )
+    hlines!( ax, [ 2.8 ], color = :mediumpurple4)
+    scatter!( ax, a, f, color = :black, line_width = 2 )
+    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{sle}(t = t_{e})$ [m]", height = Relative(3/4) )
     return fig, ax
 end
 
