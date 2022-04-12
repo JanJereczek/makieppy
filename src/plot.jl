@@ -101,7 +101,7 @@ function get_bifurcation_diagram(ncAIS, ncWAIS, plotcons)
     ax = Axis(
         fig[1, 1], 
         xlabel = L"$\Delta T$ [K]", 
-        ylabel = L"$V_{sle}$ [m]",
+        ylabel = L"$V_{\mathrm{ice, WAIS}}$ [mSLE]",
         xminorticks = IntervalsBetween(10),
         yminorticks = IntervalsBetween(10),
         xminorgridvisible = true,
@@ -226,7 +226,7 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1][1, 1], 
-        xlabel = L"$a$ [K/yr]",
+        xlabel = L"$a$ [K$ \, \mathrm{yr}^{-1}$]",
         ylabel = L"$\Delta T_{\max}$ [K]",
         xscale = log10,
         yminorticks = IntervalsBetween(5),
@@ -234,7 +234,7 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
     )
     
     shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
-    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{sle}(t = t_{e})$ [$10^6$ cubic km]")
+    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_\mathrm{ice}(t = t_{e})$ [mSLE]")
     return fig, ax
 end
 
@@ -250,8 +250,8 @@ function hm_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, 
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1][1, 1], 
-        xlabel = L"$a$ [K/yr]",
-        ylabel = L"$\Delta T$ [K]",
+        xlabel = L"$a$ [K$ \, \mathrm{yr}^{-1}$]",
+        ylabel = L"$\Delta T_{\max}$ [K]",
         xscale = log10,
         yminorticks = IntervalsBetween(5),
         yminorgridvisible = true,
@@ -265,7 +265,7 @@ function hm_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, 
     heatmap!( ax, a_ext_tipped, f_ext_tipped, e_ext_tipped, colormap = myblue, colorrange = extrema(e) )
     hlines!( ax, [ 2.8 ], color = :mediumpurple4)
     scatter!( ax, a, f, color = :black, line_width = 2 )
-    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_{sle}(t = t_{e})$ [m]", height = Relative(3/4) )
+    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_\mathrm{ice}(t = t_{e})$ [mSLE]", height = Relative(3/4) )
     return fig, ax
 end
 

@@ -258,7 +258,7 @@ Choose the 1D variables you would like to plot:
 """
 
 # ╔═╡ 2b1d04d9-ebec-475d-98eb-34eaff147759
-@bind var1D_WAIS_list confirm(MultiCheckBox(vars1D_WAIS , default =  ["V_sle", "A_ice", "bmb", "smb"]))
+@bind var1D_WAIS_list confirm(MultiCheckBox(vars1D_WAIS , default =  ["V_sle", "A_ice", "bmb", "V_ice"]))
 
 # ╔═╡ 32271713-4f3d-4e9f-b9dc-2679bb38f821
 begin
@@ -281,7 +281,7 @@ begin
 		# fig_tgrid, ax_tgrid = scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
 		fig_tgrid, ax_tgrid = hm_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
 	# scatter_ssp( ax, year, "industrial" )
-		scatter_ssp_path( ax_tgrid, 2060, 2099, 10, "industrial" )
+		# scatter_ssp_path( ax_tgrid, 2060, 2099, 10, "industrial" )
 		ylims!(ax_tgrid, (1.7, 3.3))
 		fig_tgrid
 	end
@@ -331,6 +331,14 @@ extract_ramp_parameters( nc1D_list[hl_ix_WAIS] )
 # ╔═╡ 04bb319e-bb36-4480-9ab0-130965407f0c
 update_line(fig1D_WAIS, axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons, hl_ix_WAIS, downsample_factor)
 
+# ╔═╡ cadb13dc-1a5a-4c11-a0d6-661828ba2dbe
+md"""
+You can set the name of the target file for saving the plot:
+"""
+
+# ╔═╡ cb903cbf-c6c9-43c1-b093-3f7afa8c0640
+@bind name_1DWAIS TextField(default = "WAIS_1D")
+
 # ╔═╡ f8c289d4-6aca-41a1-ae9a-ea97e3671d7f
 md"""
 To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
@@ -342,7 +350,7 @@ To save the figure, simply tick the following checkbox. Note that if not unticke
 # ╔═╡ e5a5419c-a416-4457-afc8-885257662fd1
 begin
 	if save2
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), "WAIS1D", "both", fig1D_WAIS)
+		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), name_1DWAIS, "both", fig1D_WAIS)
 	end
 end
 
@@ -390,14 +398,14 @@ md"""
 
 # ╔═╡ 496ce8cd-5d9c-4a00-95ac-f0c26aad1a84
 begin
-	nc3D_dict = init_dict( nc3D_list_filt[1:end] );
+	nc3D_dict = init_dict( nc3D_list_filt[1:2] );
 	nc3D_dict = load_data!( nc3D_dict, var3D_list );
 end
 
 # ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
 begin
-	lowerlim = [1e-3, 1e-3, -Inf, -Inf];
-	upperlim = [1000, 5000, Inf, Inf];
+	lowerlim = [-1000, -1000, -Inf, -Inf];
+	upperlim = [1000, 1000, Inf, Inf];
 	extrema3D_dict = get_extrema( nc3D_dict, var3D_list, lowerlim, upperlim );
 end
 
@@ -611,8 +619,10 @@ end
 # ╠═7c37756b-3bd9-4716-8be4-f99cf025ca70
 # ╠═bf5467bc-7e8b-4dec-b9ed-ef0b3f0cb092
 # ╠═04bb319e-bb36-4480-9ab0-130965407f0c
+# ╟─cadb13dc-1a5a-4c11-a0d6-661828ba2dbe
+# ╠═cb903cbf-c6c9-43c1-b093-3f7afa8c0640
 # ╟─f8c289d4-6aca-41a1-ae9a-ea97e3671d7f
-# ╟─e8f3c2bf-fc73-4dcc-982d-975e1031ff2e
+# ╠═e8f3c2bf-fc73-4dcc-982d-975e1031ff2e
 # ╟─e5a5419c-a416-4457-afc8-885257662fd1
 # ╟─dc442f55-7fab-434f-ac3a-903d4c680dc4
 # ╠═fd909e1c-b1cf-4ad6-b553-228c1df245db
