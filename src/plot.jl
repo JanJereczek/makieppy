@@ -50,8 +50,10 @@ function init_lines(
     var_list::Vector{String},
     plotcons::Any,
     downsample_factor::Int,
+    tlim,
     )
 
+    t1, t2 = tlim
     nrows, ncols = plotcons.nrows, plotcons.ncols
     for i in 1:nrows
         for j in 1:ncols
@@ -61,7 +63,8 @@ function init_lines(
                 exp = nc_dict["nc_list"][l]
                 plot_var = nc_dict[exp][var][1:downsample_factor:end-1]
                 t = plotcons.dt1D .* downsample_factor .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
-                lines!(axs[k], t, plot_var, color = :lightgray)
+                i1, i2 = argmin( (t .- t1).^2 ), argmin( (t .- t2).^2 )
+                lines!(axs[k], t[i1:i2], plot_var[i1:i2], color = :lightgray)
             end
         end
     end
@@ -75,22 +78,30 @@ function update_line(
     plotcons::Any,
     hl_ix::Int,
     downsample_factor::Int,
+    tlim,
     )
 
+    t1, t2 = tlim
     nrows, ncols = plotcons.nrows, plotcons.ncols
     var_dict = nc_dict[ nc_dict["nc_list"][hl_ix] ]
     for i in 1:nrows
         for j in 1:ncols
             k = get_k(i, j, ncols)
             var = var_list[k]
-            var_hl = var_dict[var][1:downsample_factor:end-1]
-            t_hl = plotcons.dt1D .* downsample_factor .* ( 0:(length(var_hl)-1) ) ./ 1e3 # kyr
+            plot_var = var_dict[var][1:downsample_factor:end-1]
+            t = plotcons.dt1D .* downsample_factor .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
+            i1, i2 = argmin( (t .- t1).^2 ), argmin( (t .- t2).^2 )
+            pv = plot_var[i1:i2]
 
             delete!(axs[k], axs[k].scene[end])
-            lines!(axs[k], t_hl, var_hl, color = :royalblue4, line_width = 2)
+            lines!(axs[k], t[i1:i2], pv, color = :royalblue4, line_width = 2)
+
+            y1, y2 = minimum(pv), maximum(pv)
+            ydiff = y2-y1
+            y1, y2 = y1 - 0.1*ydiff, y2 + 0.1*ydiff
+            limits!(axs[k], t1, t2, y1, y2) # x1, x2, y1, y2
         end
     end
-
     return fig
 end
 

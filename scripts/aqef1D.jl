@@ -132,7 +132,13 @@ Choose the 1D variables you would like to plot:
 """
 
 # ╔═╡ ef76d945-7388-4642-984f-58e1197e7b10
-@bind var1D_list confirm(MultiCheckBox(vars1D , default =  ["hyst_f_now", "bmb", "V_sl", "V_ice"]))
+@bind var1D_list_alphabetical confirm(MultiCheckBox(vars1D , default =  ["hyst_f_now", "bmb", "V_sl", "V_ice"]))
+
+# ╔═╡ de6d1836-0596-4bd8-8ee6-a16cd367c6c0
+begin
+	reorder = [2, 1, 3, 4]
+	var1D_list = var1D_list_alphabetical[reorder]
+end
 
 # ╔═╡ 6c307e28-1d28-4d54-87bc-34fc237fc30f
 md"""
@@ -172,32 +178,29 @@ To speed up the plotting procedure, one can choose a downsampling factor:
 # ╔═╡ 1fb29956-ef45-48b5-99fa-9c3660f79371
 @bind downsample_factor confirm( NumberField( 1:100, default=1) )
 
+# ╔═╡ 517b6037-1c89-4a13-8731-06177b7dad8d
+println(var1D_list)
+
 # ╔═╡ 3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 begin
 	load_data!( nc1D_dict, var1D_list );
 	line_plotcons = InitPlotConst(nrows1D, ncols1D, ft_size, rsl, colors, labels1D, dt1D, dt3D);
 	fig1D = init_fig( line_plotcons );
+	tlim = (65.0, 80.0)
 	axs1D = init_axs(fig1D, line_plotcons, var1D_list);
-	tlim = (65000, 80000)
 end
 
 # ╔═╡ e2ee4337-0251-4775-9f68-1cc3ca306b3b
 init_lines(axs1D, nc1D_dict, var1D_list, line_plotcons, downsample_factor, tlim)
 
-# ╔═╡ de6d1836-0596-4bd8-8ee6-a16cd367c6c0
-var1D_list
-
 # ╔═╡ 547fcf0a-1f15-43e0-9532-be9d2cfcd175
 @bind hl_ix Select(ixs, default = 1)
-
-# ╔═╡ e731a859-ff2a-4168-b11f-4aa72b625e02
-extract_ramp_parameters( nc1D_list[hl_ix] )
 
 # ╔═╡ 2901c7d0-1224-44e0-b852-56787089a926
 nc1D_dict[ nc1D_list[hl_ix] ][ "hyst_f_now" ][end]
 
 # ╔═╡ 4144b41b-3d5a-4dcb-9e61-5d532a3a8854
-update_line(fig1D, axs1D, nc1D_dict, var1D_list, line_plotcons, hl_ix, downsample_factor)
+update_line(fig1D, axs1D, nc1D_dict, var1D_list, line_plotcons, hl_ix, downsample_factor, tlim)
 
 # ╔═╡ 30140890-21ec-4084-97ca-dfef34c843c6
 md"""
@@ -392,172 +395,6 @@ begin
 	end
 end
 
-# ╔═╡ 0d80c308-60c1-4390-b999-ba87f62c5e67
-md"""
-## 3D Variables
-"""
-
-# ╔═╡ d2011ce2-0e85-4a00-9a11-b12c13dbc5f7
-@bind var3D_list confirm( MultiCheckBox(vars3D , default =  ["z_srf", "uxy_s"]) )
-
-# ╔═╡ 496ce8cd-5d9c-4a00-95ac-f0c26aad1a84
-begin
-	nc3D_dict = init_dict( nc3D_list_filt[1:end] );
-	nc3D_dict = load_data!( nc3D_dict, var3D_list );
-end
-
-# ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
-begin
-	lowerlim = [-1000, -1000, -Inf, -Inf];
-	upperlim = [1000, 1000, Inf, Inf];
-	extrema3D_dict = get_extrema( nc3D_dict, var3D_list, lowerlim, upperlim );
-end
-
-# ╔═╡ 517e2adb-2fa4-4528-80a5-7de5b9b2b36d
-@bind exp_id Select(ixs)
-
-# ╔═╡ c582d0d2-aaad-4b3f-9dc0-42f4a5f3d2c6
-begin
-	exp_key = nc3D_list_filt[exp_id];
-	nt = size( nc3D_dict[exp_key][ var3D_list[1] ] )[3];
-	tframes = 1:nt;
-	# line_plotcons = InitPlotConst(nrows1D, ncols1D, ft_size, rsl, colors, labels1D, dt1D, dt3D);
-	hm_plotcons = InitPlotConst(1, 2, ft_size, (1200, 600), colors, labels3D, dt1D, dt3D);
-	fig3D = init_fig( hm_plotcons );
-	axs3D = init_hm_axs(fig3D, hm_plotcons, var3D_list, exp_key, extrema3D_dict);
-end
-
-# ╔═╡ 916c521b-7e41-49f6-a94a-e401b09e8f3e
-@bind tframe Select(tframes)
-
-# ╔═╡ ce11169d-8dc1-4d9a-85d3-ed0e68447cd7
-begin
-	fig3D_updated = update_hm_3D( fig3D, axs3D, nc3D_dict, nc1D_dict, exp_key, tframe, var3D_list, hm_plotcons, extrema3D_dict )
-end
-
-# ╔═╡ e5d4908e-861a-4829-99c6-4dc5b93a8536
-md"""
-You can set the name of the target file for saving the plot:
-"""
-
-# ╔═╡ 54815cd2-9893-4124-8055-a5418ccca2d0
-@bind name_2Dvarplot TextField(default = "2Dvarplot")
-
-# ╔═╡ 1db22fa9-becc-4aee-9410-5e2e96645dab
-md"""
-To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
-"""
-
-# ╔═╡ 7529e265-1b6b-4738-ab09-9dba16f65942
-@bind save_2Dvarplot CheckBox(false)
-
-# ╔═╡ 9c3ed40f-e9c5-49ce-862d-41455373e1a5
-begin
-	if save_2Dvarplot
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), name_2Dvarplot, "both", fig3D_updated)
-	end
-end
-
-# ╔═╡ da4ed259-1752-4209-b555-4ab6f1dda208
-md"""
-## Generate Video
-"""
-
-# ╔═╡ 6e189527-5b7a-4bd9-ac99-d79b74ea60ee
-md"""
-To generate a video, simply tick the following checkbox. Note that if not unticked, it will automatically re-generate the video at any update!
-"""
-
-# ╔═╡ 4f45ed97-908b-4762-adec-81577870165c
-@bind genvid1 CheckBox(false)
-
-# ╔═╡ daae5d13-c460-4de4-926b-eca63f60f8b0
-begin
-	if genvid1
-		get_hm_video( fig3D, axs3D, nc3D_dict, nc1D_dict, exp_key, var3D_list, hm_plotcons, extrema3D_dict, tframes, 5 )
-	end
-end
-
-# ╔═╡ 22394677-6c70-4b7b-a2d1-26524bbbcfbc
-md"""
-### Evolution Plot
-"""
-
-# ╔═╡ 4481bbba-39e6-415b-b1d7-12ff78968db6
-@bind evol_var Select(var3D_list, default = "H_ice")
-
-# ╔═╡ 600d1e27-3695-42cb-ae7a-23aadad5633a
-@bind evo_frames confirm(MultiCheckBox( collect(1:1:130) , default =  collect(10:1:13) ))
-
-# ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
-begin
-	evolhm_plotcons = InitPlotConst(2, 2, 20, (1200, 1200), colors, labels3D, dt1D, dt3D);
-	fig_evo = evolution_hmplot(nc3D_dict, evo_frames, evolhm_plotcons, evol_var, exp_key, extrema3D_dict)
-end
-
-# ╔═╡ 25bc2940-c6a5-4104-b5aa-b7c2e2462c31
-md"""
-To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
-"""
-
-# ╔═╡ 0035667d-7d21-4e22-8c7a-7f7d45e1b936
-@bind save3 CheckBox(false)
-
-# ╔═╡ 4f171024-2c63-4ca6-a477-7cd11fa68423
-@bind name3 TextField(default = "evo_plot")
-
-# ╔═╡ 711ee795-3f82-4f31-8fda-fb596f8ea2cf
-begin
-	if save3
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), name3, "both", fig_evo)
-	end
-end
-
-# ╔═╡ c69d8900-4f31-4e8e-b066-219c187531b5
-md"""
-## Difference Plot
-"""
-
-# ╔═╡ 0d9e0b46-9e6b-4da0-ac99-05cfab2d4743
-@bind exp_id1 Select(ixs)
-
-# ╔═╡ 2cd75200-4c80-4818-bd4e-22ba0ef1271b
-@bind exp_id2 Select(ixs)
-
-# ╔═╡ e9ad8f74-5646-4bc7-bcc6-039575070a2f
-begin
-	exp_key1 = get_key(nc3D_list_filt, exp_id1)
-	exp_key2 = get_key(nc3D_list_filt, exp_id2)
-	tframes1 = get_timeframes(exp_key1, nc3D_dict)
-	tframes2 = get_timeframes(exp_key2, nc3D_dict)
-end
-
-# ╔═╡ 7d1c8eb3-bfa3-4d21-8412-bd56d30fd2a3
-@bind tframe1 Select(tframes1)
-
-# ╔═╡ 84dd18b9-3a00-499a-99ad-4000f2b3c245
-@bind tframe2 Select(tframes2)
-
-# ╔═╡ c1582e81-27cf-4644-ae08-168f87eefa8b
-plot_diffhm_3D(nc3D_dict, exp_key1, exp_key2, tframe1, tframe2, var3D_list, hm_plotcons)
-
-# ╔═╡ 80146c29-e13b-47ec-b8d3-040929e0507a
-
-
-# ╔═╡ 4d9f8ca1-604c-4fe6-a4ee-ded966ee32ea
-md"""
-To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
-"""
-
-# ╔═╡ 9e565b97-d959-4624-a71e-5ed186e2264c
-@bind save4 CheckBox(false)
-
-# ╔═╡ 491c1ca5-dfd0-4da4-9ac6-e99f81688f80
-begin
-	if save4
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), "1D", "both", fig1D)
-	end
-end
 
 # ╔═╡ Cell order:
 # ╟─05c69dbe-df76-457d-8b4b-ed80a851656a
@@ -578,6 +415,7 @@ end
 # ╟─e44728c2-fd00-4f46-8af3-5552c2ce086c
 # ╟─fae93994-bb9f-45ce-8d04-e879a2b4ef6e
 # ╠═ef76d945-7388-4642-984f-58e1197e7b10
+# ╠═de6d1836-0596-4bd8-8ee6-a16cd367c6c0
 # ╟─6c307e28-1d28-4d54-87bc-34fc237fc30f
 # ╟─8ecce53d-8f95-42a6-83c5-4f140fc3719a
 # ╟─684df28f-75fb-4b60-9068-fefc85da47f4
@@ -588,11 +426,10 @@ end
 # ╟─91ac16d9-6339-4839-850d-3df4bf0a1708
 # ╟─bccb8aaf-da92-41f0-9009-6d1d14e187e9
 # ╠═1fb29956-ef45-48b5-99fa-9c3660f79371
+# ╠═517b6037-1c89-4a13-8731-06177b7dad8d
 # ╠═3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 # ╠═e2ee4337-0251-4775-9f68-1cc3ca306b3b
-# ╠═de6d1836-0596-4bd8-8ee6-a16cd367c6c0
 # ╟─547fcf0a-1f15-43e0-9532-be9d2cfcd175
-# ╟─e731a859-ff2a-4168-b11f-4aa72b625e02
 # ╟─2901c7d0-1224-44e0-b852-56787089a926
 # ╠═4144b41b-3d5a-4dcb-9e61-5d532a3a8854
 # ╟─30140890-21ec-4084-97ca-dfef34c843c6
@@ -636,39 +473,3 @@ end
 # ╟─fb6750c3-f73e-40a4-816f-133fd6b09690
 # ╠═eaa6bd44-ce8c-4a7c-abbf-8786ac1451d9
 # ╟─ead87b27-b8c1-4ba3-93f8-912a378d75c7
-# ╟─0d80c308-60c1-4390-b999-ba87f62c5e67
-# ╠═d2011ce2-0e85-4a00-9a11-b12c13dbc5f7
-# ╠═496ce8cd-5d9c-4a00-95ac-f0c26aad1a84
-# ╠═a39d8efc-8f68-4a04-adbe-4c60be9b5e54
-# ╠═517e2adb-2fa4-4528-80a5-7de5b9b2b36d
-# ╠═c582d0d2-aaad-4b3f-9dc0-42f4a5f3d2c6
-# ╠═916c521b-7e41-49f6-a94a-e401b09e8f3e
-# ╠═ce11169d-8dc1-4d9a-85d3-ed0e68447cd7
-# ╟─e5d4908e-861a-4829-99c6-4dc5b93a8536
-# ╠═54815cd2-9893-4124-8055-a5418ccca2d0
-# ╟─1db22fa9-becc-4aee-9410-5e2e96645dab
-# ╠═7529e265-1b6b-4738-ab09-9dba16f65942
-# ╟─9c3ed40f-e9c5-49ce-862d-41455373e1a5
-# ╟─da4ed259-1752-4209-b555-4ab6f1dda208
-# ╟─6e189527-5b7a-4bd9-ac99-d79b74ea60ee
-# ╟─4f45ed97-908b-4762-adec-81577870165c
-# ╠═daae5d13-c460-4de4-926b-eca63f60f8b0
-# ╟─22394677-6c70-4b7b-a2d1-26524bbbcfbc
-# ╠═4481bbba-39e6-415b-b1d7-12ff78968db6
-# ╠═600d1e27-3695-42cb-ae7a-23aadad5633a
-# ╠═65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
-# ╟─25bc2940-c6a5-4104-b5aa-b7c2e2462c31
-# ╠═0035667d-7d21-4e22-8c7a-7f7d45e1b936
-# ╠═4f171024-2c63-4ca6-a477-7cd11fa68423
-# ╠═711ee795-3f82-4f31-8fda-fb596f8ea2cf
-# ╟─c69d8900-4f31-4e8e-b066-219c187531b5
-# ╠═0d9e0b46-9e6b-4da0-ac99-05cfab2d4743
-# ╠═2cd75200-4c80-4818-bd4e-22ba0ef1271b
-# ╠═e9ad8f74-5646-4bc7-bcc6-039575070a2f
-# ╠═7d1c8eb3-bfa3-4d21-8412-bd56d30fd2a3
-# ╠═84dd18b9-3a00-499a-99ad-4000f2b3c245
-# ╠═c1582e81-27cf-4644-ae08-168f87eefa8b
-# ╠═80146c29-e13b-47ec-b8d3-040929e0507a
-# ╟─4d9f8ca1-604c-4fe6-a4ee-ded966ee32ea
-# ╠═9e565b97-d959-4624-a71e-5ed186e2264c
-# ╠═491c1ca5-dfd0-4da4-9ac6-e99f81688f80
