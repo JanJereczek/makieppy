@@ -73,11 +73,19 @@ function extract_dt( nc_dict::Dict )
     return nc_dict
 end
 
-function get_ncols(list::Vector{String}, nrows::Int)
+function get_ncols(list::Any, nrows::Int)
     n = length(list)
     return Int(ceil(n / nrows))
 end
 
 function get_resolution( nrows::Int, ncols::Int, base::Int)
     return ncols*base, nrows*base
+end
+
+function reorder_list(list, idx)
+    ordered_list = []
+    for i in idx
+        push!(ordered_list, [list[j] for j in i])
+    end
+    return ordered_list
 end

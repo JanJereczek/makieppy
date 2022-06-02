@@ -42,6 +42,15 @@ function load_data!( nc_dict::Dict , var_list::Vector{String} )
     return nc_dict
 end
 
+function add_data_field!( var_list, nc_dict1, nc_dict2, var)
+    nclist1, nclist2 = nc_dict1["nc_list"], nc_dict2["nc_list"]
+    for i in 1:length(nclist1)
+        nc_dict1[nclist1[i]][var] = nc_dict2[nclist2[i]][var]
+    end
+    push!(var_list, var)
+    return var_list, nc_dict1
+end
+
 # Initialise the grounding line computation by loading the needed variable.
 function init_grline!( nc_dict::Dict )
     for file in nc_dict["nc_list"]
@@ -130,8 +139,9 @@ function load_ssp()
     names = ["SSP2", "SSP3", "SSP5", "History"]
     ssp_dict["names"] = names
     for name in names
-        ssp_dict[ name ] = DataFrame( CSV.File( string("data/SSP/", name, ".csv" ) ) )
+        ssp_dict[ name ] = DataFrame( CSV.File( string(datadir("SSP/"), name, ".csv" ) ) )
         ssp_dict[ string(name, "_interp") ] = LinearInterpolation( ssp_dict[ name ][:, 1], ssp_dict[ name ][:, 2] )
+        println( ssp_dict[ name ] )
     end
     return ssp_dict
 end
@@ -139,7 +149,7 @@ end
 function get_ssp( s, year, reference )
 
     if reference == "industrial"
-        ref_year = 2000
+        ref_year = 2014
         ref = s["History_interp"](ref_year)
     elseif reference == "pre-industrial"
         ref_year = 1850
@@ -150,4 +160,36 @@ function get_ssp( s, year, reference )
     ΔT = proj .- ref
     a = ΔT ./ ( year-ref_year )
     return ΔT, a
+end
+
+function extract_calving!(var_list, nc1D_dict, path)
+    nc3D_list = get_nc_lists(path, "yelmo2D.nc");
+    dt3D = get_dt( nc3D_list );
+
+    var3D_list = ["calv"]
+    nc3D_dict = init_dict( nc3D_list );
+    nc3D_dict = load_data!( nc3D_dict, var3D_list );
+
+    dt1D = 1.0
+
+    nc1D_list, nc3D_list = nc1D_dict["nc_list"], nc3D_dict["nc_list"]
+    for i in 1:length(nc1D_list)
+        exp1, exp3 = nc1D_list[i], nc3D_list[i]
+        C = nc3D_dict[exp3]["calv"]
+        n1, n2, n3 = size(C)
+        c = zeros( n3 )
+
+        for i in 1:n3
+            c[i] = -mean(C[:, :, i])
+        end
+        c[1] = c[2]
+
+        t3 = 0:dt3D:dt3D*(n3-1)
+        interp_linear = LinearInterpolation(t3, c)
+
+        t1 = 0:dt1D:dt3D*(n3-1)
+        nc1D_dict[exp1]["calv"] = interp_linear.(t1)
+    end
+    push!(var_list, "calv")
+    return var_list, nc1D_dict
 end

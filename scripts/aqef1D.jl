@@ -80,15 +80,8 @@ md"""
 
 # ╔═╡ 0895e44a-6894-4f1d-84fe-6f1838783b32
 begin
-	# path = "/media/Data/Jan/yelmox_v1.662/GridRamp1/";
-	# ixs = collect(1:3);
-	# ixs = [1];
 	exp_type = "aqef_retreat/";
-	# exp_type = "ramp3/";
-	exp_type = "";
 	path = string("/media/Data/Jan/yelmox_v1.75/", exp_type);
-	# path = "/home/jan/yelmo-ucm/yelmox_v1.75/output/aqef_retreat_16km_100kyr";
-	# path = "/home/jan/yelmo-ucm/yelmox_v1.75/output/ramps_16km";
 	nc1D_list = get_nc_lists(path, "yelmo1D.nc");
 	nc1D_WAIS_list = get_nc_lists(path, "yelmo1D_WAIS.nc");
 	nc3D_list = get_nc_lists(path, "yelmo2D.nc");
@@ -136,8 +129,8 @@ Choose the 1D variables you would like to plot:
 
 # ╔═╡ de6d1836-0596-4bd8-8ee6-a16cd367c6c0
 begin
-	reorder = [2, 1, 3, 4]
-	var1D_list = var1D_list_alphabetical[reorder]
+	reorder = [[2], [1], [3], [4]]
+	var1D_list = reorder_list(var1D_list_alphabetical, reorder)
 end
 
 # ╔═╡ 6c307e28-1d28-4d54-87bc-34fc237fc30f
@@ -160,7 +153,8 @@ Choose the base resolution you would like to have for your plots and confirm:
 @bind base_rsl confirm(NumberField(100:100:1000, default=500))
 
 # ╔═╡ 9551c5bb-f458-4c2a-8fdb-c1bb067ba6b6
-rsl = get_resolution( nrows1D, ncols1D, base_rsl );
+# rsl = get_resolution( nrows1D, ncols1D, base_rsl );
+rsl = (1000, 800)
 
 # ╔═╡ 897ac020-da22-48e1-a484-27ec56849904
 md"""
@@ -179,19 +173,21 @@ To speed up the plotting procedure, one can choose a downsampling factor:
 @bind downsample_factor confirm( NumberField( 1:100, default=1) )
 
 # ╔═╡ 517b6037-1c89-4a13-8731-06177b7dad8d
-println(var1D_list)
+var1D_list
 
 # ╔═╡ 3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 begin
-	load_data!( nc1D_dict, var1D_list );
+	load_data!( nc1D_dict, var1D_list_alphabetical );
 	line_plotcons = InitPlotConst(nrows1D, ncols1D, ft_size, rsl, colors, labels1D, dt1D, dt3D);
 	fig1D = init_fig( line_plotcons );
 	tlim = (65.0, 80.0)
-	axs1D = init_axs(fig1D, line_plotcons, var1D_list);
 end
 
+# ╔═╡ 79dfc7fd-9314-4c01-8c9c-e2a59bee5efa
+axs1D = init_axs(fig1D, line_plotcons, var1D_list_alphabetical);
+
 # ╔═╡ e2ee4337-0251-4775-9f68-1cc3ca306b3b
-init_lines(axs1D, nc1D_dict, var1D_list, line_plotcons, downsample_factor, tlim)
+init_lines(axs1D, nc1D_dict, var1D_list, line_plotcons, downsample_factor; tlim)
 
 # ╔═╡ 547fcf0a-1f15-43e0-9532-be9d2cfcd175
 @bind hl_ix Select(ixs, default = 1)
@@ -200,7 +196,7 @@ init_lines(axs1D, nc1D_dict, var1D_list, line_plotcons, downsample_factor, tlim)
 nc1D_dict[ nc1D_list[hl_ix] ][ "hyst_f_now" ][end]
 
 # ╔═╡ 4144b41b-3d5a-4dcb-9e61-5d532a3a8854
-update_line(fig1D, axs1D, nc1D_dict, var1D_list, line_plotcons, hl_ix, downsample_factor, tlim)
+update_line(fig1D, axs1D, nc1D_dict, var1D_list, line_plotcons, hl_ix, downsample_factor; tlim)
 
 # ╔═╡ 30140890-21ec-4084-97ca-dfef34c843c6
 md"""
@@ -225,118 +221,54 @@ begin
 	end
 end
 
-# ╔═╡ 889087f4-3beb-4509-a94d-2266bfccc9df
-begin
-	ctrl_plotcons = InitPlotConst(1, 2, ft_size, (1200, 500), colors, labels1D, dt1D, dt3D);
-	fig_ctrl = plot_control( ctrl_plotcons, nc1D_dict )
-end
-
-# ╔═╡ 0e59c0ac-701d-46e2-8c38-24ed4a4a0d51
-md"""
-You can set the name of the target file for saving the plot:
-"""
-
-# ╔═╡ d2b7ffc7-42ac-46c5-92f0-96fdbb1795ff
-@bind name_ctrl TextField(default = "AIS_ctrl")
-
-# ╔═╡ e7667311-3f75-4507-b5a1-8a5ba04dfd80
-md"""
-To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
-"""
-
-# ╔═╡ c4b42bc1-6d2c-490e-a545-22021bf547a7
-@bind save_ctrl CheckBox(false)
-
-# ╔═╡ 869a9128-365a-4c2c-9f2b-1a8f0beb3552
-begin
-	if save_ctrl
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type )), name_ctrl, "both", fig_ctrl)
-	end
-end
-
-# ╔═╡ 661c6c30-0650-4669-833f-885dd6cc9418
-md"""
-## Comparing End States of the WAIS
-"""
-
-# ╔═╡ 710603db-6bad-4bf8-b831-9c913f48949d
-md"""
-Choose the 1D variables you would like to plot:
-"""
-
-# ╔═╡ 2b1d04d9-ebec-475d-98eb-34eaff147759
-@bind var1D_WAIS_list confirm(MultiCheckBox(vars1D_WAIS , default =  ["V_sle", "A_ice", "bmb", "V_ice"]))
-
-# ╔═╡ 32271713-4f3d-4e9f-b9dc-2679bb38f821
-begin
-	load_data!( nc1D_WAIS_dict, var1D_WAIS_list );
-	tipgrid_plotcons = InitPlotConst(1, 1, ft_size, (base_rsl, base_rsl), colors, labels1D, dt1D, dt3D);
-end
-
-# ╔═╡ e9187f69-b2d7-42ee-939b-edcdd5bff67b
-nt_WAIS = length( nc1D_WAIS_dict[ nc1D_WAIS_list[1] ][ var1D_WAIS_list[1] ] )
-
-# ╔═╡ 616e2fc6-27a5-43d3-a4e1-70d4659cef7e
-@bind tip_frame confirm( NumberField(1:nt_WAIS, default=nt_WAIS) )
-
-# ╔═╡ aac3fb96-b0a4-435f-9ce4-478de1c2d8fe
-begin
-	if length(nc1D_WAIS_list) > 10
-		avg_wdw = 2;
-		fmx_vec, a_vec, end_vec = get_final_value(nc1D_WAIS_dict, "V_sle", avg_wdw, tip_frame);
-		extrema(end_vec)
-		# fig_tgrid, ax_tgrid = scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
-		fig_tgrid, ax_tgrid = hm_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
-	# scatter_ssp( ax, year, "industrial" )
-		# scatter_ssp_path( ax_tgrid, 2060, 2099, 10, "industrial" )
-		ylims!(ax_tgrid, (1.7, 3.3))
-		fig_tgrid
-	end
-end
-
-# ╔═╡ fda9b297-43ad-4456-8af4-d389058ed6ac
-md"""
-You can set the name of the target file for saving the plot:
-"""
-
-# ╔═╡ 3402fdfc-d227-471f-839f-b405a4a0f06a
-@bind name_tipgrid TextField(default = "tipgrid")
-
-# ╔═╡ b463897f-056e-4291-85e4-6fda689ba21d
-md"""
-To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
-"""
-
-# ╔═╡ 6f653476-791d-42c4-928c-ccad121373d1
-@bind save_tipgrid CheckBox(false)
-
-# ╔═╡ ff9dc3bd-4229-4898-9e19-e8c658fb279a
-begin
-	if save_tipgrid
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), name_tipgrid, "both", fig_tgrid)
-	end
-end
-
 # ╔═╡ 6c661771-46c0-48ae-825d-945aa350fe8d
 md"""
 #### Plot the Time Series of WAIS 
 """
 
+# ╔═╡ 2b1d04d9-ebec-475d-98eb-34eaff147759
+@bind var1D_WAIS_alphabetical confirm(MultiCheckBox(vars1D_WAIS , default =  ["V_sle", "A_ice", "bmb", "smb"]))
+
+# ╔═╡ 3e9c8f54-9574-4846-977b-dc577c13f702
+var1D_WAIS_alphabetical
+
+# ╔═╡ d9555789-a142-475a-8024-0944486ad683
+keys(nc1D_WAIS_dict)
+
+# ╔═╡ 2d1056c7-0f31-4480-b6cf-3adf53c44751
+begin
+	load_data!( nc1D_WAIS_dict, var1D_WAIS_alphabetical );
+	add_data_field!( var1D_WAIS_alphabetical, nc1D_WAIS_dict, nc1D_dict, "hyst_f_now" )
+	# extract_calving!( var1D_WAIS_alphabetical, nc1D_WAIS_dict, path )
+end
+
+# ╔═╡ 03bd30ea-3023-4896-a992-f836c5654f17
+var1D_WAIS_alphabetical
+
+# ╔═╡ 54252a9f-3bf6-4bb7-bb59-3855930af2e9
+begin
+	reorder_WAIS = [[5], [3, 4], [2], [1]]
+	var1D_WAIS_list = reorder_list(var1D_WAIS_alphabetical, reorder_WAIS)
+end
+
+# ╔═╡ bf430111-9e81-45aa-9966-9bca9075a721
+var1D_WAIS_list
+
 # ╔═╡ 10ce2861-9524-4f01-9471-5108686d1cd3
 begin
 	fig1D_WAIS = init_fig( line_plotcons );
-	axs1D_WAIS = init_axs(fig1D_WAIS, line_plotcons, var1D_WAIS_list);
+	axs1D_WAIS = init_axs(fig1D_WAIS, line_plotcons, ["hyst_f_now", "mb", "V_sle", "A_ice"]);
 	init_lines(axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons, downsample_factor);
 end
 
 # ╔═╡ 7c37756b-3bd9-4716-8be4-f99cf025ca70
 @bind hl_ix_WAIS Select(ixs, default = 1)
 
-# ╔═╡ bf5467bc-7e8b-4dec-b9ed-ef0b3f0cb092
-extract_ramp_parameters( nc1D_list[hl_ix_WAIS] )
-
 # ╔═╡ 04bb319e-bb36-4480-9ab0-130965407f0c
 update_line(fig1D_WAIS, axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons, hl_ix_WAIS, downsample_factor)
+
+# ╔═╡ f198aba2-881e-481e-81a9-f683749ae76d
+line_plotcons.resolution
 
 # ╔═╡ cadb13dc-1a5a-4c11-a0d6-661828ba2dbe
 md"""
@@ -357,7 +289,7 @@ To save the figure, simply tick the following checkbox. Note that if not unticke
 # ╔═╡ e5a5419c-a416-4457-afc8-885257662fd1
 begin
 	if save2
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), name_1DWAIS, "both", fig1D_WAIS)
+		save_fig(plotsdir( string("yelmox_v1.75/32km/", exp_type)), name_1DWAIS, "both", fig1D_WAIS)
 	end
 end
 
@@ -367,7 +299,7 @@ md"""
 """
 
 # ╔═╡ fd909e1c-b1cf-4ad6-b553-228c1df245db
-bif_plotcons = InitPlotConst(1, 1, ft_size, (800,500), colors, labels1D, dt1D, dt3D);
+bif_plotcons = InitPlotConst(1, 1, ft_size, (600,500), colors, labels1D, dt1D, dt3D);
 
 # ╔═╡ 86d6b1fa-7386-4a68-ae9a-cc272d1a5fbe
 fig_bif = get_bifurcation_diagram(nc1D_dict, nc1D_WAIS_dict, bif_plotcons)
@@ -391,10 +323,17 @@ To save the figure, simply tick the following checkbox. Note that if not unticke
 # ╔═╡ ead87b27-b8c1-4ba3-93f8-912a378d75c7
 begin
 	if save_bifdiagram
-		save_fig(plotsdir( string("yelmox_v1.75/", exp_type)), name_bif, "both", fig_bif)
+		save_fig(plotsdir( string("yelmox_v1.75/32km/", exp_type)), name_bif, "both", fig_bif)
 	end
 end
 
+
+# ╔═╡ ea20370c-4c9e-4a88-a517-abef2e17af1c
+begin
+	if save_bifdiagram
+		save_fig(plotsdir( string("yelmox_v1.75/32km/", exp_type)), name_bif, "both", fig_bif)
+	end
+end
 
 # ╔═╡ Cell order:
 # ╟─05c69dbe-df76-457d-8b4b-ed80a851656a
@@ -421,13 +360,14 @@ end
 # ╟─684df28f-75fb-4b60-9068-fefc85da47f4
 # ╟─311ab417-d9c7-4c73-8565-c8adad889e19
 # ╟─c3226566-3004-4f88-b73c-4426fd48ef2b
-# ╟─9551c5bb-f458-4c2a-8fdb-c1bb067ba6b6
+# ╠═9551c5bb-f458-4c2a-8fdb-c1bb067ba6b6
 # ╟─897ac020-da22-48e1-a484-27ec56849904
 # ╟─91ac16d9-6339-4839-850d-3df4bf0a1708
 # ╟─bccb8aaf-da92-41f0-9009-6d1d14e187e9
 # ╠═1fb29956-ef45-48b5-99fa-9c3660f79371
 # ╠═517b6037-1c89-4a13-8731-06177b7dad8d
 # ╠═3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
+# ╠═79dfc7fd-9314-4c01-8c9c-e2a59bee5efa
 # ╠═e2ee4337-0251-4775-9f68-1cc3ca306b3b
 # ╟─547fcf0a-1f15-43e0-9532-be9d2cfcd175
 # ╟─2901c7d0-1224-44e0-b852-56787089a926
@@ -437,34 +377,23 @@ end
 # ╟─55803f22-a1f5-49cf-bfad-867794eed0ee
 # ╟─5a240e0b-52f7-4a02-b79b-087f2d3c5f39
 # ╟─b81908a7-fe95-46c0-84bb-7f5a16c29e05
-# ╠═889087f4-3beb-4509-a94d-2266bfccc9df
-# ╟─0e59c0ac-701d-46e2-8c38-24ed4a4a0d51
-# ╠═d2b7ffc7-42ac-46c5-92f0-96fdbb1795ff
-# ╟─e7667311-3f75-4507-b5a1-8a5ba04dfd80
-# ╟─c4b42bc1-6d2c-490e-a545-22021bf547a7
-# ╟─869a9128-365a-4c2c-9f2b-1a8f0beb3552
-# ╟─661c6c30-0650-4669-833f-885dd6cc9418
-# ╟─710603db-6bad-4bf8-b831-9c913f48949d
-# ╠═2b1d04d9-ebec-475d-98eb-34eaff147759
-# ╠═32271713-4f3d-4e9f-b9dc-2679bb38f821
-# ╠═e9187f69-b2d7-42ee-939b-edcdd5bff67b
-# ╠═616e2fc6-27a5-43d3-a4e1-70d4659cef7e
-# ╠═aac3fb96-b0a4-435f-9ce4-478de1c2d8fe
-# ╟─fda9b297-43ad-4456-8af4-d389058ed6ac
-# ╠═3402fdfc-d227-471f-839f-b405a4a0f06a
-# ╟─b463897f-056e-4291-85e4-6fda689ba21d
-# ╟─6f653476-791d-42c4-928c-ccad121373d1
-# ╟─ff9dc3bd-4229-4898-9e19-e8c658fb279a
 # ╟─6c661771-46c0-48ae-825d-945aa350fe8d
+# ╠═2b1d04d9-ebec-475d-98eb-34eaff147759
+# ╠═3e9c8f54-9574-4846-977b-dc577c13f702
+# ╠═d9555789-a142-475a-8024-0944486ad683
+# ╠═2d1056c7-0f31-4480-b6cf-3adf53c44751
+# ╠═03bd30ea-3023-4896-a992-f836c5654f17
+# ╠═54252a9f-3bf6-4bb7-bb59-3855930af2e9
+# ╠═bf430111-9e81-45aa-9966-9bca9075a721
 # ╠═10ce2861-9524-4f01-9471-5108686d1cd3
 # ╠═7c37756b-3bd9-4716-8be4-f99cf025ca70
-# ╠═bf5467bc-7e8b-4dec-b9ed-ef0b3f0cb092
 # ╠═04bb319e-bb36-4480-9ab0-130965407f0c
+# ╠═f198aba2-881e-481e-81a9-f683749ae76d
 # ╟─cadb13dc-1a5a-4c11-a0d6-661828ba2dbe
 # ╠═cb903cbf-c6c9-43c1-b093-3f7afa8c0640
 # ╟─f8c289d4-6aca-41a1-ae9a-ea97e3671d7f
 # ╟─e8f3c2bf-fc73-4dcc-982d-975e1031ff2e
-# ╠═e5a5419c-a416-4457-afc8-885257662fd1
+# ╟─e5a5419c-a416-4457-afc8-885257662fd1
 # ╟─dc442f55-7fab-434f-ac3a-903d4c680dc4
 # ╠═fd909e1c-b1cf-4ad6-b553-228c1df245db
 # ╠═86d6b1fa-7386-4a68-ae9a-cc272d1a5fbe
@@ -473,3 +402,4 @@ end
 # ╟─fb6750c3-f73e-40a4-816f-133fd6b09690
 # ╠═eaa6bd44-ce8c-4a7c-abbf-8786ac1451d9
 # ╟─ead87b27-b8c1-4ba3-93f8-912a378d75c7
+# ╟─ea20370c-4c9e-4a88-a517-abef2e17af1c

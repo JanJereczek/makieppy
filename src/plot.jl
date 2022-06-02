@@ -5,10 +5,10 @@ using CairoMakie;   # Our bread and butter.
 ##########################################################
 # Initialise any figure with latex font and pre-defined resolution and fontsize.
 function init_fig(plotcons::Any)
-    return Figure(resolution = plotcons.resolution, font = "cmunrm.ttf", fontsize = plotcons.fontsize)
+    return Figure(resolution = plotcons.resolution, font = srcdir("cmunrm.ttf"), fontsize = plotcons.fontsize)
 end
 # Initialise nrows*ncols axis for plotting 1D variables.
-function init_axs(fig::Figure, plotcons::Any, var_list::Vector{String})
+function init_axs(fig::Figure, plotcons::Any, var_list::Any)
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(
         fig[i, j][1, 1],
@@ -47,24 +47,30 @@ end
 function init_lines(
     axs, 
     nc_dict::Dict,
-    var_list::Vector{String},
+    var_list::Any,
     plotcons::Any,
-    downsample_factor::Int,
-    tlim,
+    downsample_factor::Int;
+    tlim = false,
     )
 
-    t1, t2 = tlim
     nrows, ncols = plotcons.nrows, plotcons.ncols
     for i in 1:nrows
         for j in 1:ncols
             k = get_k(i, j, ncols)
-            var = var_list[k]
-            for l in 1:length(nc_dict["nc_list"])
-                exp = nc_dict["nc_list"][l]
-                plot_var = nc_dict[exp][var][1:downsample_factor:end-1]
-                t = plotcons.dt1D .* downsample_factor .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
-                i1, i2 = argmin( (t .- t1).^2 ), argmin( (t .- t2).^2 )
-                lines!(axs[k], t[i1:i2], plot_var[i1:i2], color = :lightgray)
+            var_sublist = var_list[k]
+            for var in var_sublist
+                for l in 1:length(nc_dict["nc_list"])
+                    exp = nc_dict["nc_list"][l]
+                    plot_var = nc_dict[exp][var][1:downsample_factor:end-1]
+                    t = plotcons.dt1D .* downsample_factor .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
+                    if tlim == false
+                        lines!(axs[k], t, plot_var, color = :lightgray)
+                    else
+                        t1, t2 = tlim
+                        i1, i2 = argmin( (t .- t1).^2 ), argmin( (t .- t2).^2 )
+                        lines!(axs[k], t[i1:i2], plot_var[i1:i2], color = :lightgray)
+                    end
+                end
             end
         end
     end
@@ -74,32 +80,48 @@ function update_line(
     fig::Figure,
     axs, 
     nc_dict::Dict,
-    var_list::Vector{String},
+    var_list::Any,
     plotcons::Any,
     hl_ix::Int,
-    downsample_factor::Int,
-    tlim,
+    downsample_factor::Int;
+    tlim = false,
+    legendposition = :lb,
     )
 
-    t1, t2 = tlim
     nrows, ncols = plotcons.nrows, plotcons.ncols
     var_dict = nc_dict[ nc_dict["nc_list"][hl_ix] ]
     for i in 1:nrows
         for j in 1:ncols
             k = get_k(i, j, ncols)
-            var = var_list[k]
-            plot_var = var_dict[var][1:downsample_factor:end-1]
-            t = plotcons.dt1D .* downsample_factor .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
-            i1, i2 = argmin( (t .- t1).^2 ), argmin( (t .- t2).^2 )
-            pv = plot_var[i1:i2]
-
+            var_sublist = var_list[k]
             delete!(axs[k], axs[k].scene[end])
-            lines!(axs[k], t[i1:i2], pv, color = :royalblue4, line_width = 2)
+            total = 0.
+            for var in var_sublist
+                plot_var = var_dict[var][1:downsample_factor:end-1]
+                global t = plotcons.dt1D .* downsample_factor .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
 
-            y1, y2 = minimum(pv), maximum(pv)
-            ydiff = y2-y1
-            y1, y2 = y1 - 0.1*ydiff, y2 + 0.1*ydiff
-            limits!(axs[k], t1, t2, y1, y2) # x1, x2, y1, y2
+                if tlim != false
+                    t1, t2 = tlim
+                    i1, i2 = argmin( (t .- t1).^2 ), argmin( (t .- t2).^2 )
+                    global t = t[i1:i2]
+                    plot_var = plot_var[i1:i2]
+                end
+                lines!(axs[k], t, plot_var, line_width = 2, label = plotcons.labels[var]) #, color = :royalblue4
+
+                total = total .+ plot_var
+                # y1, y2 = minimum(plot_var), maximum(plot_var)
+                # ydiff = y2-y1
+                # y1, y2 = y1 - 0.1*ydiff, y2 + 0.1*ydiff
+                if tlim != false
+                    # limits!(axs[k], t1, t2, y1, y2) # x1, x2, y1, y2
+                    xlims!(axs[k], t1, t2)
+                end
+            end
+
+            if length(var_sublist) >= 2
+                # lines!(axs[k], t, total, label = "total")
+                axislegend(axs[k], position = legendposition)
+            end
         end
     end
     return fig
@@ -111,17 +133,29 @@ function get_bifurcation_diagram(ncAIS, ncWAIS, plotcons)
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1], 
-        xlabel = L"$\Delta T$ [K]", 
+        xlabel = L"Atmospheric $\Delta T$ [K]", 
         ylabel = L"$V_{\mathrm{ice, WAIS}}$ [mSLE]",
         xminorticks = IntervalsBetween(10),
         yminorticks = IntervalsBetween(10),
         xminorgridvisible = true,
         yminorgridvisible = true,
+        xticklabelcolor = :black,
     )
+
+    ax2 = Axis(
+        fig[1, 1],
+        xlabel = L"Oceanic $\Delta T$ [K]",
+        xticklabelcolor = :royalblue4, 
+        xaxisposition = :top,
+        )
+    # hidespines!(ax2)
+    # hidexdecorations!(ax2)
 
     f = ncAIS[exp_key_AIS]["hyst_f_now"]
     V = ncWAIS[exp_key_WAIS]["V_sle"]
     lines!(ax, f, V)
+    lines!(ax2, f*0.25, V)
+
     return fig
 end
 
@@ -212,17 +246,46 @@ function evolution_hmplot(nc3D_dict::Dict, frames::Vector{Int}, plotcons::Any, v
     fig = init_fig(plotcons)
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(fig[i, j][1, 1], title = L"$t = $ %$(string( plotcons.dt3D * frames[ get_k(i, j, ncols) ] )) yr" ) for j in 1:ncols, i in 1:nrows]
+    ref_grndline = nc3D_dict[exp_key]["f_grnd"][:, :, 1]
     for i in 1:nrows
         for j in 1:ncols
             k = get_k(i, j, ncols)
             hidedecorations!(axs[k])
+
+            heatmap!(
+                axs[k],
+                nc3D_dict[exp_key]["z_bed"][:, :, frames[k]],
+                # colorrange = extrema_dict[exp_key][var],
+                colormap = plotcons.colors[ "z_bed" ],
+                # lowclip = :white,
+                transparency = true,
+            )
+
             heatmap!(
                 axs[k],
                 nc3D_dict[exp_key][var][:, :, frames[k]],
                 colorrange = extrema_dict[exp_key][var],
                 colormap = plotcons.colors[ var ],
                 lowclip = :white,
+                transparency = true,
             )
+            contour!(
+                axs[k],
+                ref_grndline,
+                levels = [0.99],
+                color = :gray,
+                linewidth = 2,
+            )
+            contour!(
+                axs[k],
+                nc3D_dict[exp_key]["f_grnd"][:, :, frames[k]],
+                levels = [0.99],
+                color = :black,
+                linewidth = 2,
+                linestyle = :dash,
+            )
+
+
         end
     end
     Colorbar(fig[:, ncols+1][1, 1], colormap = plotcons.colors[var], limits = extrema_dict[exp_key][var], height = Relative(1/2), lowclip = :white, label = plotcons.labels[var])
@@ -250,7 +313,7 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
 end
 
 function hm_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, plotcons)
-    f_ext_nontipped = f .- 0.599
+    f_ext_nontipped = f .- 0.399
     e_ext_nontipped = maximum(e) .* ones( size(f_ext_nontipped) )
     a_ext_nontipped = a
 
@@ -261,22 +324,27 @@ function hm_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, 
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1][1, 1], 
-        xlabel = L"$a$ [K$ \, \mathrm{yr}^{-1}$]",
-        ylabel = L"$\Delta T_{\max}$ [K]",
+        xlabel = L"Forcing rate $a$ [K$ \, \mathrm{yr}^{-1}$]",
+        ylabel = L"Atmospheric $\Delta T_{\max}$ [K]",
         xscale = log10,
         yminorticks = IntervalsBetween(5),
         yminorgridvisible = true,
     )
-    myblue = cgrad([:plum2, :lightblue1])
+    myblue = cgrad([:plum1, :lightblue1])
+    # myblue = cgrad([:peachpuff2, :lightblue1])
+    # myblue = cgrad([:lightgreen, :lightblue1])
+    
     # shm = heatmap!( ax, a, f, e, colormap = cgrad(:Blues_3, rev = true) )
     # heatmap!( ax, a_ext_nontipped, f_ext_nontipped, e_ext_nontipped, colormap = cgrad(:Blues_3, rev = true), colorrange = extrema(e) )
     # heatmap!( ax, a_ext_tipped, f_ext_tipped, e_ext_tipped, colormap = cgrad(:Blues_3, rev = true), colorrange = extrema(e) )
     shm = heatmap!( ax, a, f, e, colormap = myblue )
     heatmap!( ax, a_ext_nontipped, f_ext_nontipped, e_ext_nontipped, colormap = myblue, colorrange = extrema(e) )
     heatmap!( ax, a_ext_tipped, f_ext_tipped, e_ext_tipped, colormap = myblue, colorrange = extrema(e) )
-    hlines!( ax, [ 2.8 ], color = :mediumpurple4)
-    scatter!( ax, a, f, color = :black, line_width = 2 )
-    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_\mathrm{ice}(t = t_{e})$ [mSLE]", height = Relative(3/4) )
+    hlines!( ax, [ 2.8 ], color = :gray50, linewidth = 5, label = "Bifurcation point", linestyle = :dash)
+    scatter!( ax, a, f, color = :gray15, line_width = 2 )
+    Colorbar(fig[1, 1][1, 2], shm, label = L"Final ice volume of WAIS $V_\mathrm{WAIS}(t = t_{e})$ [mSLE]", height = Relative(3/4) )
+    axislegend(position = :lb)
+
     return fig, ax
 end
 
@@ -292,7 +360,7 @@ function scatter_ssp_point( ax, year, reference )
     axislegend("SSP Scenario-Year", position = :lb)
 end
 
-function scatter_ssp_path( ax, lb, ub, Δyr, reference )
+function scatter_ssp_path( ax, lb, ub, Δyr, reference, ant_amplification )
 
     s = load_ssp()
     nscenarios = length( s["names"] ) - 1   # Historic record is not a scenario, therefore: -1
@@ -306,10 +374,25 @@ function scatter_ssp_path( ax, lb, ub, Δyr, reference )
     end
 
     clrs = [:darkorange, :red2, :darkred]
-    yrlbl = string(lb, " to ", ub)
-    l = [string("SSP2: ", yrlbl) , string("SSP3: ", yrlbl), string("SSP5: ", yrlbl)]
+    yrlbl = string(lb, " to ", ub+1)
+    ΔT_mat = ΔT_mat .* ant_amplification
+    # l = [string("SSP2: ", yrlbl) , string("SSP3: ", yrlbl), string("SSP5: ", yrlbl)]
+    l = ["SSP2", "SSP3", "SSP5"]
+    loc = [(:right, :top), (:right, :top), (:left, :top)]
+    offset = [-1e-3, -1e-3, 1e-3]
     for i in 1:length(l)
-        scatterlines!(ax, a_mat[i, :], ΔT_mat[i, :], color = clrs[i], markersize = range(10, stop = 20, length = nyears), label = l[i])
+        # lb = string.(l[i], ": ", string.(2060:10:2100))
+        scatterlines!(ax, a_mat[i, :], ΔT_mat[i, :], color = clrs[i], label = l[i], linestyle = :dash)
+        text!(
+            ax, 
+            string.(years), 
+            position = [(a_mat[i, j] + offset[i], ΔT_mat[i, j] - 0.01) for j in 1:length(years)], 
+            color = clrs[i],
+            align = loc[i],
+            markerspace = 10,
+        )
+        # annotations!(ax, string.(2060:10:2100), a_mat[i, :], ΔT_mat[i, :], textsize = 0.1, color = clrs[i])
     end
-    axislegend("SSP Scenario: Time Span", position = :lb)
+    
+    axislegend(position = :lb)
 end
