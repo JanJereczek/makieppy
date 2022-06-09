@@ -80,24 +80,25 @@ md"""
 
 # ╔═╡ 0895e44a-6894-4f1d-84fe-6f1838783b32
 begin
-	exp_type = "ramp3/";
+	# exp_type = "ramp3/";
+	exp_type = "isotau1";
 	path = string("/media/Data/Jan/yelmox_v1.75/", exp_type);
 	nc1D_list = get_nc_lists(path, "yelmo1D.nc");
 	nc1D_WAIS_list = get_nc_lists(path, "yelmo1D_WAIS.nc");
-	nc3D_list = get_nc_lists(path, "yelmo2D.nc");
 
 	# ixs = collect(6:6);
 	ixs = collect(1: length(nc1D_WAIS_list))
 	nc1D_list_filt = filter_nc_list( nc1D_list, ixs );
 	nc1D_WAIS_filt = filter_nc_list( nc1D_WAIS_list, ixs);
-	nc3D_list_filt = filter_nc_list( nc3D_list, ixs );
 end
+
+# ╔═╡ 94a5bc06-64f6-4434-8541-95260f891707
+ixs
 
 # ╔═╡ 8e0c75ef-ae2d-4a7e-8314-5521150f51ac
 begin
 	vars1D = sort( get_vars( nc1D_list[1] ) )
 	vars1D_WAIS = sort( get_vars( nc1D_WAIS_list[1] ) )
-	vars3D = sort( get_vars( nc3D_list[1] ) )
 	
 	nc1D_dict = init_dict( nc1D_list_filt );
 	nc1D_WAIS_dict = init_dict( nc1D_WAIS_filt );
@@ -113,9 +114,8 @@ end
 
 # ╔═╡ e97ba5bd-4683-4c45-ba97-3b79e6e9bace
 begin
-	colors = load_colors(vars3D)
+	colors = load_colors(["H_ice"])
 	labels1D = load_1Dlabels(vars1D)
-	labels3D = load_3Dlabels(vars3D)
 end
 
 # ╔═╡ e44728c2-fd00-4f46-8af3-5552c2ce086c
@@ -371,6 +371,7 @@ end
 # ╠═acb1556b-dce7-4ec1-9f9c-85aacf500553
 # ╟─20f47d5b-7100-4c29-95b4-33a41770bcea
 # ╠═0895e44a-6894-4f1d-84fe-6f1838783b32
+# ╠═94a5bc06-64f6-4434-8541-95260f891707
 # ╠═8e0c75ef-ae2d-4a7e-8314-5521150f51ac
 # ╠═35b2bd8f-de32-4275-b86d-0f182d984fe9
 # ╠═e97ba5bd-4683-4c45-ba97-3b79e6e9bace

@@ -40,7 +40,8 @@ end
 
 # Compute the number of frames present in an experiment.
 function get_timeframes(exp_key, nc3D_dict)
-	nt = size( nc3D_dict[exp_key]["H_ice"] )[3]
+    var = collect( keys(nc3D_dict[exp_key]) )[1]    # just take the first variable to get time frames.
+	nt = size( nc3D_dict[exp_key][var] )[3]
     return 1:nt
 end
 
@@ -88,4 +89,10 @@ function reorder_list(list, idx)
         push!(ordered_list, [list[j] for j in i])
     end
     return ordered_list
+end
+
+function print_index_list(list)
+    for i in 1:length(list)
+		println(i, "   ", list[i])
+	end
 end

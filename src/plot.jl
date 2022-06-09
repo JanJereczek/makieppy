@@ -12,12 +12,14 @@ function init_axs(fig::Figure, plotcons::Any, var_list::Any)
     nrows, ncols = plotcons.nrows, plotcons.ncols
     axs = [Axis(
         fig[i, j][1, 1],
-        xlabel = (i == nrows) ? L"$t$ [kyr]" : " ",
+        xlabel = (i == nrows) ? L"Time (kyr) $\,$" : " ",
         ylabel = plotcons.labels[get_var(i, j, ncols, var_list)],
         xminorticks = IntervalsBetween(10),
         yminorticks = IntervalsBetween(10),
         xminorgridvisible = true,
         yminorgridvisible = true,
+        xticksvisible = (i == nrows) ? true : false,
+        xticklabelsvisible = (i == nrows) ? true : false,
         ) for j in 1:ncols, i in 1:nrows]
     return axs
 end
@@ -133,8 +135,8 @@ function get_bifurcation_diagram(ncAIS, ncWAIS, plotcons)
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1], 
-        xlabel = L"Atmospheric $\Delta T$ [K]", 
-        ylabel = L"$V_{\mathrm{ice, WAIS}}$ [mSLE]",
+        xlabel = L"Local atmospheric temperature anomaly (K) $\,$", 
+        ylabel = L"Sea-level equivalent ice volume (mSLE) $\,$",
         xminorticks = IntervalsBetween(10),
         yminorticks = IntervalsBetween(10),
         xminorgridvisible = true,
@@ -144,17 +146,24 @@ function get_bifurcation_diagram(ncAIS, ncWAIS, plotcons)
 
     ax2 = Axis(
         fig[1, 1],
-        xlabel = L"Oceanic $\Delta T$ [K]",
-        xticklabelcolor = :royalblue4, 
+        xlabel = L"Local oceanic temperature anomaly (K) $\,$",
         xaxisposition = :top,
-        )
+    )
+    # ax3 = Axis(
+    #     fig[1, 1],
+    #     xlabel = L"Global temperature anomaly (K) $\,$",
+    #     xaxisposition = :bottom,
+    #     xticklabelcolor = :lightgray,
+    # )
+
     # hidespines!(ax2)
     # hidexdecorations!(ax2)
 
     f = ncAIS[exp_key_AIS]["hyst_f_now"]
     V = ncWAIS[exp_key_WAIS]["V_sle"]
     lines!(ax, f, V)
-    lines!(ax2, f*0.25, V)
+    lines!(ax2, f .* 0.25, V)
+    # lines!(ax3, f ./ 1.8, V)
 
     return fig
 end
@@ -178,6 +187,29 @@ end
 ##########################################################
 ##################### 3D Plotting ########################
 ##########################################################
+# Error plot
+function error_plot(
+    fig::Figure,
+    axs,
+    var::String,
+    lims,
+    nc3D_dict,
+    )
+
+    if var == "H_ice"
+        ref = readnc(bedmap, "H_ice")
+    elseif var == "uxy_s"
+        ref = readnc(bedmap, "H_ice")
+    end
+    yelmo = nc3D_dict[var][1]
+    idline = collect(0:1:4000)
+    contourf!( axs[1], ref )
+    contourf!( axs[2], yelmo )
+    contourf!( axs[3], abs.(ref .- yelmo) )
+    scatter!( axs[4], ref, yelmo)
+    lines!( axs[4], idline, idline, color = :red)
+end
+
 # 3D: 2D plots over time!
 function update_hm_3D(
     fig::Figure,
@@ -208,9 +240,9 @@ function update_hm_3D(
     t = (tframe-1) * plotcons.dt3D
     tframe1D = floor(Int, t / plotcons.dt1D + 1)
     exp_key1D = string( chop_ncfile_tail(exp_key), "1D.nc" )
-    ΔT = round(nc1D_dict[ exp_key1D ][ "hyst_f_now" ][ tframe1D ]; digits=2)
+    # ΔT = round(nc1D_dict[ exp_key1D ][ "hyst_f_now" ][ tframe1D ]; digits=2)
     text!(axs[end], L"$t = $ %$(string( t )) yr", position = (30, 10), align = (:center, :center))
-    text!(axs[end], L"$\Delta T = $ %$(string( ΔT )) K", position = (100, 10), align = (:center, :center))
+    # text!(axs[end], L"$\Delta T = $ %$(string( ΔT )) K", position = (100, 10), align = (:center, :center))
 
     return fig
 end
@@ -223,11 +255,14 @@ function plot_diffhm_3D(
     tframe2::Int,
     var_list::Vector{String},
     plotcons::Any,
+    lowlim::Vector,
+    uplim::Vector,
+    diffmaps,
     )
 
     nrows, ncols = plotcons.nrows, plotcons.ncols
     fig = init_fig(plotcons)
-    axs = [Axis(fig[i, j][1, 1], title = plotcons.labels[get_var(i, j, ncols, var_list)] ) for j in 1:ncols, i in 1:nrows]
+    axs = [Axis(fig[i, j][1, 1]) for j in 1:ncols, i in 1:nrows]
 
     for i in 1:nrows
         for j in 1:ncols
@@ -235,17 +270,34 @@ function plot_diffhm_3D(
             hidedecorations!(axs[k])
             diff = nc_dict[ exp_key1 ][ var_list[k] ][:, :, tframe1] - nc_dict[ exp_key2 ][ var_list[k] ][:, :, tframe2]
             diff[1, 1] +=  1e-3     # avoid 0 differences for colorbar generation
-            hm = heatmap!( axs[k], diff , colormap = plotcons.colors[ var_list[k] ])
-            Colorbar(fig[i, j][1, 2], hm)
+            hm = heatmap!( 
+                axs[k],
+                diff, 
+                colormap = diffmaps[k],
+                colorrange = [lowlim[k], uplim[k]],
+            )
+            Colorbar(fig[i, j][1, 2], hm, height=Relative(3/4), label = plotcons.labels[get_var(i, j, ncols, var_list)])
         end
     end
     return fig
 end
 
-function evolution_hmplot(nc3D_dict::Dict, frames::Vector{Int}, plotcons::Any, var::String, exp_key::String, extrema_dict::Dict)
+# axs = [Axis(fig[i, j][1, 1], title = L"$t = $ %$(string( plotcons.dt3D * frames[ get_k(i, j, ncols) ] )) yr" ) for j in 1:ncols, i in 1:nrows]
+
+function evolution_hmplot(
+    nc3D_dict::Dict,
+    ctrl_dict::Dict,
+    frames::Vector{Int},
+    plotcons::Any,
+    var::String,
+    exp_key::String,
+    extrema_dict::Dict
+    )
+
     fig = init_fig(plotcons)
     nrows, ncols = plotcons.nrows, plotcons.ncols
-    axs = [Axis(fig[i, j][1, 1], title = L"$t = $ %$(string( plotcons.dt3D * frames[ get_k(i, j, ncols) ] )) yr" ) for j in 1:ncols, i in 1:nrows]
+    ctrl = ctrl_dict["ts"][frames]
+    axs = [ Axis(fig[i, j][1, 1], title = "$(string( ctrl[ get_k(i, j, ncols) ]  ) ) K") for j in 1:ncols, i in 1:nrows ]
     ref_grndline = nc3D_dict[exp_key]["f_grnd"][:, :, 1]
     for i in 1:nrows
         for j in 1:ncols
@@ -269,26 +321,45 @@ function evolution_hmplot(nc3D_dict::Dict, frames::Vector{Int}, plotcons::Any, v
                 lowclip = :white,
                 transparency = true,
             )
+            contour!(axs[k], 
+                nc3D_dict[exp_key]["lat2D"];
+                color=:lightgray, 
+                levels=-90:10:90,
+            )
+            contour!(axs[k], 
+                nc3D_dict[exp_key]["lon2D"];
+                color=:grey90, 
+                levels=-180:60:180,
+            )
+            contour!(axs[k], 
+                nc3D_dict[exp_key]["z_srf"][:, :, frames[k]];
+                color=:grey60, 
+                levels=1000:1000:5000,
+            )
             contour!(
                 axs[k],
                 ref_grndline,
                 levels = [0.99],
-                color = :gray,
                 linewidth = 2,
+                color = :grey30,
             )
             contour!(
                 axs[k],
                 nc3D_dict[exp_key]["f_grnd"][:, :, frames[k]],
                 levels = [0.99],
-                color = :black,
                 linewidth = 2,
-                linestyle = :dash,
+                color = :black,
             )
-
-
         end
     end
     Colorbar(fig[:, ncols+1][1, 1], colormap = plotcons.colors[var], limits = extrema_dict[exp_key][var], height = Relative(1/2), lowclip = :white, label = plotcons.labels[var])
+    # Legend(fig[nrows+1, :], axs[nrows*ncols], framevisible = false, orientation = :horizontal, tellwidth = false, tellheight = true)
+    
+    elem_1 = [LineElement(color = :black, linestyle = nothing, linewidth = 5)]
+    elem_2 = [LineElement(color = :grey30, linestyle = nothing, linewidth = 5)]
+    elem_3 = [LineElement(color = :grey60, linestyle = nothing, linewidth = 5)]
+
+    Legend(fig[nrows+1, :], [elem_1, elem_2, elem_3], ["Retreated grounding line", "Reference grounding line", "Surface elevation levels"], framevisible = false, orientation = :horizontal, tellwidth = false, tellheight = true)
     return fig
 end
 

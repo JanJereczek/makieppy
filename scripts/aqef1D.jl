@@ -110,8 +110,8 @@ end
 # ╔═╡ e97ba5bd-4683-4c45-ba97-3b79e6e9bace
 begin
 	colors = load_colors(vars3D)
-	labels1D = load_1Dlabels(vars1D)
-	labels3D = load_3Dlabels(vars3D)
+	labels1D = load_text1Dlabels(vars1D)
+	labels3D = load_text3Dlabels(vars3D)
 end
 
 # ╔═╡ e44728c2-fd00-4f46-8af3-5552c2ce086c
@@ -154,7 +154,7 @@ Choose the base resolution you would like to have for your plots and confirm:
 
 # ╔═╡ 9551c5bb-f458-4c2a-8fdb-c1bb067ba6b6
 # rsl = get_resolution( nrows1D, ncols1D, base_rsl );
-rsl = (1000, 800)
+rsl = (1100, 900)
 
 # ╔═╡ 897ac020-da22-48e1-a484-27ec56849904
 md"""
@@ -299,7 +299,7 @@ md"""
 """
 
 # ╔═╡ fd909e1c-b1cf-4ad6-b553-228c1df245db
-bif_plotcons = InitPlotConst(1, 1, ft_size, (600,500), colors, labels1D, dt1D, dt3D);
+bif_plotcons = InitPlotConst(1, 1, ft_size, (800,600), colors, labels1D, dt1D, dt3D);
 
 # ╔═╡ 86d6b1fa-7386-4a68-ae9a-cc272d1a5fbe
 fig_bif = get_bifurcation_diagram(nc1D_dict, nc1D_WAIS_dict, bif_plotcons)

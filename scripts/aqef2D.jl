@@ -99,18 +99,28 @@ end
 
 # ╔═╡ 35b2bd8f-de32-4275-b86d-0f182d984fe9
 begin
-	dt1D = get_dt( nc1D_list );
-	dt3D = get_dt( nc3D_list );
+	# dt1D = get_dt( nc1D_list );
+	# dt3D = get_dt( nc3D_list );
+	dt1D = 1.0
+	dt3D = 1000.0
 end
 
 # ╔═╡ e97ba5bd-4683-4c45-ba97-3b79e6e9bace
 begin
 	colors = load_colors(vars3D)
-	labels3D = load_3Dlabels(vars3D)
+	labels3D = load_text3Dlabels(vars3D)
 end
 
 # ╔═╡ 5e62ebd3-06df-4429-9f11-f6a3581c6bfb
-load_data!( nc1D_dict, ["hyst_f_now"] );
+
+
+# ╔═╡ e7da9d6e-e0e1-42d8-a2ba-5358e19d7ad4
+begin
+	ctrl_dict = Dict()
+	load_data!( nc1D_dict, ["hyst_f_now"] );
+	ctrl_dict["ts"] = round.(nc1D_dict["/media/Data/Jan/yelmox_v1.75/aqef_retreat/yelmo1D.nc"]["hyst_f_now"][1:Int(dt3D):end]; digits=1)
+	ctrl_dict["unit"] = "K"
+end	
 
 # ╔═╡ 0d80c308-60c1-4390-b999-ba87f62c5e67
 md"""
@@ -126,10 +136,13 @@ begin
 	nc3D_dict = load_data!( nc3D_dict, var3D_list );
 end
 
+# ╔═╡ 101b282b-b92b-4b37-837b-f171dc778e32
+load_data!( nc3D_dict, ["f_grnd", "z_bed", "lat2D", "lon2D"] );
+
 # ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
 begin
-	lowerlim = [0, 1e-8, -Inf, -Inf];
-	upperlim = [1500, 2500, Inf, Inf];
+	lowerlim = [1e-8, 1e-8, -Inf, -Inf];
+	upperlim = [2500, 2500, Inf, Inf];
 	extrema3D_dict = get_extrema( nc3D_dict, var3D_list, lowerlim, upperlim );
 end
 
@@ -186,12 +199,15 @@ md"""
 @bind evol_var Select(var3D_list, default = "uxy_s")
 
 # ╔═╡ 600d1e27-3695-42cb-ae7a-23aadad5633a
-@bind evo_frames confirm(MultiCheckBox( collect(1:1:130) , default =  collect(10:1:13) ))
+@bind evo_frames confirm(MultiCheckBox( collect(1:1:130) , default =  [1, 72, 74, 76] ))
+
+# ╔═╡ c0ab2c56-1ae3-4302-abea-3db58eb41147
+ctrl_dict["ts"]
 
 # ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
 begin
-	evolhm_plotcons = InitPlotConst(2, 2, 20, (900, 900), colors, labels3D, dt1D, dt3D);
-	fig_evo = evolution_hmplot(nc3D_dict, evo_frames, evolhm_plotcons, evol_var, exp_key, extrema3D_dict)
+	evolhm_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels3D, dt1D, dt3D);
+	fig_evo = evolution_hmplot(nc3D_dict, ctrl_dict, evo_frames, evolhm_plotcons, evol_var, exp_key, extrema3D_dict)
 end
 
 # ╔═╡ 25bc2940-c6a5-4104-b5aa-b7c2e2462c31
@@ -275,9 +291,11 @@ end
 # ╠═35b2bd8f-de32-4275-b86d-0f182d984fe9
 # ╠═e97ba5bd-4683-4c45-ba97-3b79e6e9bace
 # ╠═5e62ebd3-06df-4429-9f11-f6a3581c6bfb
+# ╠═e7da9d6e-e0e1-42d8-a2ba-5358e19d7ad4
 # ╟─0d80c308-60c1-4390-b999-ba87f62c5e67
 # ╠═d2011ce2-0e85-4a00-9a11-b12c13dbc5f7
 # ╠═496ce8cd-5d9c-4a00-95ac-f0c26aad1a84
+# ╠═101b282b-b92b-4b37-837b-f171dc778e32
 # ╠═a39d8efc-8f68-4a04-adbe-4c60be9b5e54
 # ╠═517e2adb-2fa4-4528-80a5-7de5b9b2b36d
 # ╠═c582d0d2-aaad-4b3f-9dc0-42f4a5f3d2c6
@@ -291,6 +309,7 @@ end
 # ╟─22394677-6c70-4b7b-a2d1-26524bbbcfbc
 # ╠═4481bbba-39e6-415b-b1d7-12ff78968db6
 # ╠═600d1e27-3695-42cb-ae7a-23aadad5633a
+# ╠═c0ab2c56-1ae3-4302-abea-3db58eb41147
 # ╠═65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
 # ╟─25bc2940-c6a5-4104-b5aa-b7c2e2462c31
 # ╠═0035667d-7d21-4e22-8c7a-7f7d45e1b936
