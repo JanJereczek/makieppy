@@ -130,6 +130,19 @@ function get_final_value(
     end
     return fmx_vec, a_vec, end_vec
 end
+
+function load_pd_state()
+    path_z = "/media/Data/ice_data/Antarctica/ANT-32KM/ANT-32KM_TOPO-BedMachine.nc"
+    path_u = "/media/Data/ice_data/Antarctica/ANT-32KM/ANT-32KM_VEL-R11.nc"
+    ds1 = NCDataset(path_z, "r")
+    z_ref = copy( ds1[ "z_srf" ] )
+    close(ds1)
+    ds2 = NCDataset(path_u, "r")
+    u_ref = copy( ds2[ "uxy_srf" ] )
+    close(ds2)
+    return z_ref, u_ref
+end
+
 ##########################################################
 ############# Ramp experiment functions   ################
 ##########################################################

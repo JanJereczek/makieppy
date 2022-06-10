@@ -206,7 +206,7 @@ ctrl_dict["ts"]
 
 # ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
 begin
-	evolhm_plotcons = InitPlotConst(2, 2, 20, (1000, 1000), colors, labels3D, dt1D, dt3D);
+	evolhm_plotcons = InitPlotConst(2, 3, 20, (1200, 1400), colors, labels3D, dt1D, dt3D);
 	fig_evo = evolution_hmplot(nc3D_dict, ctrl_dict, evo_frames, evolhm_plotcons, evol_var, exp_key, extrema3D_dict)
 end
 
@@ -225,6 +225,56 @@ To save the figure, simply tick the following checkbox. Note that if not unticke
 begin
 	if save3
 		save_fig(plotsdir( string("yelmox_v1.75/32km/", exp_type)), name3, "both", fig_evo)
+	end
+end
+
+# ╔═╡ a1adafa1-36fb-4461-a3dd-31cc720bb59b
+md"""
+### Error Plots
+"""
+
+# ╔═╡ e4f54db5-834a-44b5-b383-458ba850b0bc
+z_ref, u_ref = load_pd_state()
+
+# ╔═╡ 1ebe7128-37ee-41c1-8777-1a17b2302b49
+fig_z = error_plot_z(nc3D_dict, z_ref)
+
+# ╔═╡ c9369b1c-cf9f-4464-963b-6f88a459c319
+md"""
+To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
+"""
+
+# ╔═╡ e887c709-ce17-4530-b8a9-138c0456698d
+@bind save_error_z CheckBox(false)
+
+# ╔═╡ a144768a-2eaa-4b27-8371-db80af9b8db0
+@bind name_error_z TextField(default = "error_z")
+
+# ╔═╡ 6a1f3b14-7141-4696-9fc3-d157f6720988
+begin
+	if save_error_z
+		save_fig(plotsdir( string("yelmox_v1.75/32km/", exp_type)), name_error_z, "both", fig_z)
+	end
+end
+
+# ╔═╡ 08585af6-312a-4e6e-93c9-94a9060cded8
+fig_u = error_plot_u(nc3D_dict, u_ref)
+
+# ╔═╡ 1af8a7ff-72d3-4d67-9713-f69e8c0fd8a2
+md"""
+To save the figure, simply tick the following checkbox. Note that if not unticked, it will automatically save any further update of the figure!
+"""
+
+# ╔═╡ 69b8b6cc-a02f-44a2-9c26-c119e6d7413e
+@bind save_error_u CheckBox(false)
+
+# ╔═╡ bc3e2f81-2f22-4a61-81f2-95fe8b45e5e6
+@bind name_error_u TextField(default = "error_u")
+
+# ╔═╡ d8e14764-a406-4824-b591-1ca862101a39
+begin
+	if save_error_u
+		save_fig(plotsdir( string("yelmox_v1.75/32km/", exp_type)), name_error_u, "both", fig_u)
 	end
 end
 
@@ -315,6 +365,18 @@ end
 # ╠═0035667d-7d21-4e22-8c7a-7f7d45e1b936
 # ╠═4f171024-2c63-4ca6-a477-7cd11fa68423
 # ╠═711ee795-3f82-4f31-8fda-fb596f8ea2cf
+# ╟─a1adafa1-36fb-4461-a3dd-31cc720bb59b
+# ╠═e4f54db5-834a-44b5-b383-458ba850b0bc
+# ╠═1ebe7128-37ee-41c1-8777-1a17b2302b49
+# ╟─c9369b1c-cf9f-4464-963b-6f88a459c319
+# ╟─e887c709-ce17-4530-b8a9-138c0456698d
+# ╟─a144768a-2eaa-4b27-8371-db80af9b8db0
+# ╟─6a1f3b14-7141-4696-9fc3-d157f6720988
+# ╠═08585af6-312a-4e6e-93c9-94a9060cded8
+# ╟─1af8a7ff-72d3-4d67-9713-f69e8c0fd8a2
+# ╟─69b8b6cc-a02f-44a2-9c26-c119e6d7413e
+# ╟─bc3e2f81-2f22-4a61-81f2-95fe8b45e5e6
+# ╟─d8e14764-a406-4824-b591-1ca862101a39
 # ╟─c69d8900-4f31-4e8e-b066-219c187531b5
 # ╠═0d9e0b46-9e6b-4da0-ac99-05cfab2d4743
 # ╠═2cd75200-4c80-4818-bd4e-22ba0ef1271b

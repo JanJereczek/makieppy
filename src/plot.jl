@@ -84,7 +84,7 @@ function update_line(
     nc_dict::Dict,
     var_list::Any,
     plotcons::Any,
-    hl_ix::Int,
+    hl_ix,
     downsample_factor::Int;
     tlim = false,
     legendposition = :lb,
@@ -124,6 +124,41 @@ function update_line(
                 # lines!(axs[k], t, total, label = "total")
                 axislegend(axs[k], position = legendposition)
             end
+        end
+    end
+    return fig
+end
+
+function update_lines(
+    fig::Figure,
+    axs, 
+    nc_dict::Dict,
+    var_list::Any,
+    plotcons::Any,
+    hl_ix,
+    downsample_factor::Int
+    )
+
+    nrows, ncols = plotcons.nrows, plotcons.ncols
+    nhl = 5
+    for i in 1:nrows
+        for j in 1:ncols
+            k = get_k(i, j, ncols)
+            var_sublist = var_list[k]
+            for var in var_sublist
+                for l in 0:nhl
+                    if var == "bmb"
+                        df = 10
+                    else
+                        df = downsample_factor
+                    end
+                    var_dict = nc_dict[ nc_dict["nc_list"][hl_ix + l] ]
+                    plot_var = var_dict[var][1:df:end-1]
+                    t = plotcons.dt1D .* df .* ( 0:(length(plot_var)-1) ) ./ 1e3 # kyr
+                    lines!(axs[k], t, plot_var, linewidth = 2, label = plotcons.labels[var]) #, color = :royalblue4
+                end
+            end
+
         end
     end
     return fig
@@ -188,26 +223,131 @@ end
 ##################### 3D Plotting ########################
 ##########################################################
 # Error plot
-function error_plot(
-    fig::Figure,
-    axs,
-    var::String,
-    lims,
-    nc3D_dict,
-    )
+function error_plot_z(nc3D_dict, z_ref)
 
-    if var == "H_ice"
-        ref = readnc(bedmap, "H_ice")
-    elseif var == "uxy_s"
-        ref = readnc(bedmap, "H_ice")
+    fig = Figure(resolution = (1200, 1300), font = srcdir("cmunrm.ttf"), fontsize = 24)
+    axs = [Axis(
+        fig[i,j],
+        aspect = DataAspect(),
+        xlabel = ((i == 3) & (j == 2)) ? L"Observed PD surface elevation (m) $\,$" : " ",
+        ylabel = ((i == 3) & (j == 2)) ? L"Simulated PD surface elevation (m) $\,$" : " ",
+        xminorticks = IntervalsBetween(5),
+        yminorticks = IntervalsBetween(5),
+        xminorgridvisible = true,
+        yminorgridvisible = true,
+        xticksvisible = true,
+        xticklabelsvisible = true,
+        ) for i in 2:3, j in 1:2]
+
+    for ax in axs[1:3]
+        hidedecorations!(ax)
     end
-    yelmo = nc3D_dict[var][1]
-    idline = collect(0:1:4000)
-    contourf!( axs[1], ref )
-    contourf!( axs[2], yelmo )
-    contourf!( axs[3], abs.(ref .- yelmo) )
-    scatter!( axs[4], ref, yelmo)
-    lines!( axs[4], idline, idline, color = :red)
+    z_srf = nc3D_dict["/media/Data/Jan/yelmox_v1.75/aqef_retreat/yelmo2D.nc"]["z_srf"][:, :, 4]
+    idline = collect(0:1:4500)
+    lvls = 1e-3:500:4501
+    cmap = cgrad( :ice, 10, categorical = true )
+    c1 = contourf!( 
+        axs[1],
+        z_ref,
+        levels = lvls,
+        color = :white,
+        colormap = :ice,
+        linewidth = 2,
+    )
+    # c1 = heatmap!( 
+    #     axs[1],
+    #     z_ref,
+    #     colorrange = (lvls[1], lvls[end]),
+    #     colormap = cmap,
+    #     lowclip = :lavenderblush,
+    #     highclip = :white,
+    #     linewidth = 2,
+    # )
+    c2 = contourf!(
+        axs[3],
+        z_srf,
+        levels=lvls,
+        color = :white,
+        colormap = :ice,
+        lowclip = :lavenderblush,
+        linewidth = 2,
+    )
+    Colorbar(fig[1,:], c1, vertical = false, width = Relative(1/2), label = L"Surface elevation (m) $\,$")
+
+    errormap = cgrad([:firebrick, :white, :cornflowerblue])
+    hm = heatmap!( axs[2], z_srf .- z_ref, colorrange = [-400, 400], colormap = errormap, lowclip = :firebrick, highclip = :cornflowerblue)
+    # hm = contourf!( axs[2], z_srf .- z_ref, levels = -400:(800/9):400, colormap = errormap)
+    Colorbar(fig[4,:], hm, vertical = false, flipaxis = false, width = Relative(1/2), label = L"Surface elevation deviation (m) $\,$")
+
+    zref_vec = collect( Iterators.flatten(z_ref))
+    zsrf_vec = collect(Iterators.flatten(z_srf))
+    sc = scatter!( axs[4], zref_vec, zsrf_vec, color = :grey20, markersize = 2 )
+    ln = lines!( axs[4], idline, idline, color = :red, linewidth = 2)
+    return fig
+end
+
+function error_plot_u(nc3D_dict, u_ref)
+
+    fig = Figure(resolution = (1200, 1300), font = srcdir("cmunrm.ttf"), fontsize = 24)
+    axs = [Axis(
+        fig[i,j],
+        aspect = DataAspect(),
+        xlabel = ((i == 3) & (j == 2)) ? L"Observed PD surface velocity ($\mathrm{m \, yr^{-1}}$)" : " ",
+        ylabel = ((i == 3) & (j == 2)) ? L"Simulated PD surface velocity ($\mathrm{m \, yr^{-1}}$)" : " ",
+        xminorticks = IntervalsBetween(5),
+        yminorticks = IntervalsBetween(5),
+        xminorgridvisible = true,
+        yminorgridvisible = true,
+        xticksvisible = true,
+        xticklabelsvisible = true,
+        ) for i in 2:3, j in 1:2]
+    for ax in axs[1:3]
+        hidedecorations!(ax)
+    end
+    u_srf = nc3D_dict["/media/Data/Jan/yelmox_v1.75/aqef_retreat/yelmo2D.nc"]["uxy_s"][:, :, 4]
+    idline = collect(0:1:2000)
+    lvls = 10. .^ collect(-1:.5:3)
+
+    c1 = contourf!( 
+        axs[1],
+        log10.( u_ref .+ 1e-5 ),
+        color = :grey30,
+        colormap = :dense,
+        lowclip = :white,
+        linewidth = 2,
+        levels = log10.(lvls),
+    )
+    c2 = contourf!( 
+        axs[3], 
+        log10.( u_srf .+ 1e-5 ),
+        color = :grey30, 
+        colormap = :dense, 
+        lowclip = :white,
+        linewidth = 2,
+        levels = log10.(lvls),
+    )
+    maplabels = [L"$10^{-1}$", L"$10^{0}$", L"$10^{1}$", L"$10^{2}$", L"$10^{3}$"]
+    # maplabels = Dict( 0.1 => L"$10^{-1}$")
+    # maplabels = log10.(lvls[1:2:end])
+    Colorbar(fig[1,:], c1, vertical = false, width = Relative(1/2), ticks = (log10.(lvls[1:2:end]), maplabels),  label = L"Surface velocity ($\mathrm{m \, yr^{-1} }$)")
+    xlims!(axs[1], 1, size(u_ref)[1])
+    ylims!(axs[4], 1, size(u_ref)[2])
+
+    errormap = cgrad([:firebrick, :white, :cornflowerblue], rev = true)
+    hm = heatmap!( axs[2], u_srf .- u_ref, colorrange = [-400, 400], colormap = errormap, lowclip = :cornflowerblue, highclip = :firebrick)
+    Colorbar(fig[4,:], hm, vertical = false, flipaxis = false, width = Relative(1/2), label = L"Surface velocity deviation ($\mathrm{m \, yr^{-1} }$)")
+
+    xlims!(axs[4], lvls[1], 1e4)
+    ylims!(axs[4], lvls[1], 1e4)
+    axs[4].xscale = log10
+    axs[4].yscale = log10
+    uref_vec = collect( Iterators.flatten(u_ref))
+    usrf_vec = collect(Iterators.flatten(u_srf))
+    uref_vec_filt = uref_vec[ (uref_vec .> 0) .& (usrf_vec .> 0) ]
+    usrf_vec_filt = usrf_vec[ (uref_vec .> 0) .& (usrf_vec .> 0) ]
+    scatter!( axs[4], collect( Iterators.flatten(u_ref)), collect(Iterators.flatten(u_srf)), color = :grey20, markersize = 2 )
+    lines!( axs[4], idline, idline, color = :red, linewidth = 2)
+    return fig
 end
 
 # 3D: 2D plots over time!
@@ -319,6 +459,7 @@ function evolution_hmplot(
                 colorrange = extrema_dict[exp_key][var],
                 colormap = plotcons.colors[ var ],
                 lowclip = :white,
+                highclip = :grey20,
                 transparency = true,
             )
             contour!(axs[k], 
@@ -352,14 +493,14 @@ function evolution_hmplot(
             )
         end
     end
-    Colorbar(fig[:, ncols+1][1, 1], colormap = plotcons.colors[var], limits = extrema_dict[exp_key][var], height = Relative(1/2), lowclip = :white, label = plotcons.labels[var])
+    Colorbar(fig[nrows+1, :], colormap = plotcons.colors[var], limits = extrema_dict[exp_key][var], width = Relative(1/2), lowclip = :white, highclip = :grey20, label = plotcons.labels[var], vertical = false)
     # Legend(fig[nrows+1, :], axs[nrows*ncols], framevisible = false, orientation = :horizontal, tellwidth = false, tellheight = true)
     
     elem_1 = [LineElement(color = :black, linestyle = nothing, linewidth = 5)]
     elem_2 = [LineElement(color = :grey30, linestyle = nothing, linewidth = 5)]
     elem_3 = [LineElement(color = :grey60, linestyle = nothing, linewidth = 5)]
 
-    Legend(fig[nrows+1, :], [elem_1, elem_2, elem_3], ["Retreated grounding line", "Reference grounding line", "Surface elevation levels"], framevisible = false, orientation = :horizontal, tellwidth = false, tellheight = true)
+    Legend(fig[nrows+2, :], [elem_1, elem_2, elem_3], ["Retreated grounding line", "Reference grounding line", "Surface elevation levels"], framevisible = false, orientation = :horizontal, tellwidth = false, tellheight = true)
     return fig
 end
 
@@ -371,15 +512,15 @@ function scatter_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1][1, 1], 
-        xlabel = L"$a$ [K$ \, \mathrm{yr}^{-1}$]",
-        ylabel = L"$\Delta T_{\max}$ [K]",
+        xlabel = L"Ramp slope (K$ \, \mathrm{yr}^{-1}$)",
+        ylabel = L"Maximal regional atmospheric warming (K) $ \, $",
         xscale = log10,
         yminorticks = IntervalsBetween(5),
         yminorgridvisible = true,
     )
     
     shm = scatter!( ax, a, f, color = e, colormap = cgrad(:rainbow1, rev = true) )
-    Colorbar(fig[1, 1][1, 2], shm, label = L"$V_\mathrm{ice}(t = t_{e})$ [mSLE]")
+    Colorbar(fig[1, 1][1, 2], shm, label = L"Ice volume (mSLE) at $t = 30 \, \mathrm{kyr}$")
     return fig, ax
 end
 
@@ -395,13 +536,14 @@ function hm_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, 
     fig = init_fig(plotcons)
     ax = Axis(
         fig[1, 1][1, 1], 
-        xlabel = L"Forcing rate $a$ [K$ \, \mathrm{yr}^{-1}$]",
-        ylabel = L"Atmospheric $\Delta T_{\max}$ [K]",
+        xlabel = L"Ramp slope (K$ \, \mathrm{yr}^{-1}$)",
+        ylabel = L"Maximal regional atmospheric warming (K) $ \, $",
         xscale = log10,
         yminorticks = IntervalsBetween(5),
         yminorgridvisible = true,
     )
-    myblue = cgrad([:plum1, :lightblue1])
+    myblue = cgrad([:gray80, :lightblue1])
+    # myblue = cgrad([:plum1, :lightblue1]) azure, bisque, gray90, thistle2
     # myblue = cgrad([:peachpuff2, :lightblue1])
     # myblue = cgrad([:lightgreen, :lightblue1])
     
@@ -411,24 +553,12 @@ function hm_tipping(f::Vector{Float64}, a::Vector{Float64}, e::Vector{Float64}, 
     shm = heatmap!( ax, a, f, e, colormap = myblue )
     heatmap!( ax, a_ext_nontipped, f_ext_nontipped, e_ext_nontipped, colormap = myblue, colorrange = extrema(e) )
     heatmap!( ax, a_ext_tipped, f_ext_tipped, e_ext_tipped, colormap = myblue, colorrange = extrema(e) )
-    hlines!( ax, [ 2.8 ], color = :gray50, linewidth = 5, label = "Bifurcation point", linestyle = :dash)
-    scatter!( ax, a, f, color = :gray15, line_width = 2 )
-    Colorbar(fig[1, 1][1, 2], shm, label = L"Final ice volume of WAIS $V_\mathrm{WAIS}(t = t_{e})$ [mSLE]", height = Relative(3/4) )
+    hlines!( ax, [ 2.8 ], color = :gray40, linewidth = 5, label = "Bifurcation point", linestyle = :dash)
+    scatter!( ax, a, f, color = :gray15, linewidth = 2 )
+    Colorbar(fig[1, 1][1, 2], shm, label = L"Ice volume (mSLE) at $t = 30 \, \mathrm{kyr}$", height = Relative(3/4) )
     axislegend(position = :lb)
 
     return fig, ax
-end
-
-function scatter_ssp_point( ax, year, reference )
-    s = load_ssp()
-    ΔT, a = get_ssp( s, year, reference )
-
-    clrs = [:darkorange, :red2, :darkred]
-    l = [string("SSP2-", year) , string("SSP3-", year), string("SSP5-", year)]
-    for i in 1:length(l)
-        scatter!(ax, [a[i]], [ΔT[i]], color = clrs[i], markersize = 15, label = l[i])
-    end
-    axislegend("SSP Scenario-Year", position = :lb)
 end
 
 function scatter_ssp_path( ax, lb, ub, Δyr, reference, ant_amplification )
@@ -448,12 +578,12 @@ function scatter_ssp_path( ax, lb, ub, Δyr, reference, ant_amplification )
     yrlbl = string(lb, " to ", ub+1)
     ΔT_mat = ΔT_mat .* ant_amplification
     # l = [string("SSP2: ", yrlbl) , string("SSP3: ", yrlbl), string("SSP5: ", yrlbl)]
-    l = ["SSP2", "SSP3", "SSP5"]
+    l = ["SSP2-4.5", "SSP3-7.0", "SSP5-8.5"]
     loc = [(:right, :top), (:right, :top), (:left, :top)]
     offset = [-1e-3, -1e-3, 1e-3]
     for i in 1:length(l)
         # lb = string.(l[i], ": ", string.(2060:10:2100))
-        scatterlines!(ax, a_mat[i, :], ΔT_mat[i, :], color = clrs[i], label = l[i], linestyle = :dash)
+        scatterlines!(ax, a_mat[i, :], ΔT_mat[i, :], color = clrs[i], label = l[i], linestyle = :dash, linewidth = 3)
         text!(
             ax, 
             string.(years), 
@@ -461,6 +591,7 @@ function scatter_ssp_path( ax, lb, ub, Δyr, reference, ant_amplification )
             color = clrs[i],
             align = loc[i],
             markerspace = 10,
+            textsize = 18,
         )
         # annotations!(ax, string.(2060:10:2100), a_mat[i, :], ΔT_mat[i, :], textsize = 0.1, color = clrs[i])
     end

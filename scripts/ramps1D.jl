@@ -80,8 +80,8 @@ md"""
 
 # ╔═╡ 0895e44a-6894-4f1d-84fe-6f1838783b32
 begin
-	# exp_type = "ramp3/";
-	exp_type = "isotau1";
+	exp_type = "ramp3/";
+	# exp_type = "isotau1";
 	path = string("/media/Data/Jan/yelmox_v1.75/", exp_type);
 	nc1D_list = get_nc_lists(path, "yelmo1D.nc");
 	nc1D_WAIS_list = get_nc_lists(path, "yelmo1D_WAIS.nc");
@@ -115,7 +115,7 @@ end
 # ╔═╡ e97ba5bd-4683-4c45-ba97-3b79e6e9bace
 begin
 	colors = load_colors(["H_ice"])
-	labels1D = load_1Dlabels(vars1D)
+	labels1D = load_text1Dlabels(vars1D)
 end
 
 # ╔═╡ e44728c2-fd00-4f46-8af3-5552c2ce086c
@@ -129,13 +129,19 @@ Choose the 1D variables you would like to plot:
 """
 
 # ╔═╡ ef76d945-7388-4642-984f-58e1197e7b10
-@bind var1D_list_alphabetical confirm(MultiCheckBox(vars1D , default =  ["hyst_f_now", "bmb", "V_sl", "V_ice"]))
+@bind var1D_list_alphabetical confirm(MultiCheckBox(vars1D , default =  ["hyst_f_now", "bmb", "V_sl", "A_ice"]))
+
+# ╔═╡ 3b3e83d3-b375-4d04-a0f5-41e39b0352af
+var1D_list_alphabetical
 
 # ╔═╡ 7eb4b4ec-2225-419f-835f-47022493a088
 begin
-	reorder = [[2], [1], [3], [4]]
+	reorder = [[4], [3], [2], [1]]
 	var1D_list = reorder_list(var1D_list_alphabetical, reorder)
 end
+
+# ╔═╡ fd507f3e-1a7a-4a26-a928-bcb90c35e1ee
+var1D_squeezed = collect(Iterators.flatten(var1D_list))
 
 # ╔═╡ 6c307e28-1d28-4d54-87bc-34fc237fc30f
 md"""
@@ -177,17 +183,17 @@ To speed up the plotting procedure, one can choose a downsampling factor:
 
 # ╔═╡ 3dfe71c0-e6ad-4712-94ca-cc2912a99ca4
 begin
-	load_data!( nc1D_dict, var1D_list_alphabetical );
-	line_plotcons = InitPlotConst(nrows1D, ncols1D, ft_size, (1000,800), colors, labels1D, dt1D, dt3D);
+	load_data!( nc1D_dict, var1D_squeezed );
+	line_plotcons = InitPlotConst(nrows1D, ncols1D, ft_size, (1100,900), colors, labels1D, dt1D, dt3D);
 	fig1D = init_fig( line_plotcons );
 	tlim = (0, 30)
 end
 
 # ╔═╡ b818d613-907f-47a3-a141-29f8a3c0555d
-axs1D = init_axs(fig1D, line_plotcons, var1D_list_alphabetical);
+axs1D = init_axs(fig1D, line_plotcons, var1D_squeezed);
 
 # ╔═╡ e2ee4337-0251-4775-9f68-1cc3ca306b3b
-init_lines(axs1D, nc1D_dict, var1D_list, line_plotcons, downsample_factor; tlim)
+init_lines(axs1D, nc1D_dict, var1D_squeezed, line_plotcons, downsample_factor; tlim)
 
 # ╔═╡ 547fcf0a-1f15-43e0-9532-be9d2cfcd175
 @bind hl_ix Select(collect(1:length(ixs)), default = 1)
@@ -251,7 +257,7 @@ var1D_WAIS_alphabetical
 
 # ╔═╡ 84230c14-cda1-4645-8b6e-456564a5a3a7
 begin
-	reorder_WAIS = [[5], [3, 4], [2], [1]]
+	reorder_WAIS = [[5], [3], [2], [1]]
 	var1D_WAIS_list = reorder_list(var1D_WAIS_alphabetical, reorder_WAIS)
 end
 
@@ -282,7 +288,7 @@ begin
 		fig_tgrid, ax_tgrid = hm_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
 		# scatter_ssp( ax, year, "industrial" )
 		ant_ampl = 1.8
-		# scatter_ssp_path( ax_tgrid, 2040, 2080, 10, "industrial", ant_ampl )
+		scatter_ssp_path( ax_tgrid, 2040, 2100, 10, "industrial", ant_ampl )
 		ylims!(ax_tgrid, (2.0, 3.0))
 		fig_tgrid
 	end
@@ -318,13 +324,14 @@ md"""
 
 # ╔═╡ 10ce2861-9524-4f01-9471-5108686d1cd3
 begin
-	fig1D_WAIS = init_fig( line_plotcons );
-	axs1D_WAIS = init_axs(fig1D_WAIS, line_plotcons, ["hyst_f_now", "mb", "V_sle", "A_ice"] );
-	init_lines(axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons, downsample_factor; tlim);
+	line_plotcons_WAIS = InitPlotConst(nrows1D, ncols1D, ft_size, (1100,900), colors, labels1D, dt1D, dt3D);
+	fig1D_WAIS = init_fig( line_plotcons_WAIS );
+	axs1D_WAIS = init_axs(fig1D_WAIS, line_plotcons_WAIS, ["hyst_f_now", "bmb", "V_sle", "A_ice"] );
+	init_lines(axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons_WAIS, downsample_factor; tlim);
 end
 
 # ╔═╡ 7c37756b-3bd9-4716-8be4-f99cf025ca70
-@bind hl_ix_WAIS Select(collect(1:length(ixs)), default = 1)
+@bind hl_ix_WAIS Select(collect(1:length(ixs)), default = 49)
 
 # ╔═╡ bf5467bc-7e8b-4dec-b9ed-ef0b3f0cb092
 extract_ramp_parameters( nc1D_list[hl_ix_WAIS] )
@@ -333,7 +340,14 @@ extract_ramp_parameters( nc1D_list[hl_ix_WAIS] )
 var1D_WAIS_list
 
 # ╔═╡ 04bb319e-bb36-4480-9ab0-130965407f0c
-update_line(fig1D_WAIS, axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons, hl_ix_WAIS, downsample_factor)
+begin
+	update_lines(fig1D_WAIS, axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons_WAIS, hl_ix_WAIS, downsample_factor)
+	xlims!(axs1D_WAIS[1], 4, 8)
+	axs1D_WAIS[1].xticks = (4:1:8, string.(4:1:8))
+	axs1D_WAIS[1].xticksvisible = true
+	axs1D_WAIS[1].xticklabelsvisible = true
+	fig1D_WAIS
+end
 
 # ╔═╡ cadb13dc-1a5a-4c11-a0d6-661828ba2dbe
 md"""
@@ -341,7 +355,7 @@ You can set the name of the target file for saving the plot:
 """
 
 # ╔═╡ cb903cbf-c6c9-43c1-b093-3f7afa8c0640
-@bind name_1DWAIS TextField(default = "WAIS_1D")
+@bind name_1DWAIS TextField(default = "WAIS_ramps1D")
 
 # ╔═╡ f8c289d4-6aca-41a1-ae9a-ea97e3671d7f
 md"""
@@ -378,7 +392,9 @@ end
 # ╟─e44728c2-fd00-4f46-8af3-5552c2ce086c
 # ╟─fae93994-bb9f-45ce-8d04-e879a2b4ef6e
 # ╠═ef76d945-7388-4642-984f-58e1197e7b10
+# ╠═3b3e83d3-b375-4d04-a0f5-41e39b0352af
 # ╠═7eb4b4ec-2225-419f-835f-47022493a088
+# ╠═fd507f3e-1a7a-4a26-a928-bcb90c35e1ee
 # ╟─6c307e28-1d28-4d54-87bc-34fc237fc30f
 # ╟─8ecce53d-8f95-42a6-83c5-4f140fc3719a
 # ╟─684df28f-75fb-4b60-9068-fefc85da47f4
