@@ -136,11 +136,12 @@ function load_pd_state()
     path_u = "/media/Data/ice_data/Antarctica/ANT-32KM/ANT-32KM_VEL-R11.nc"
     ds1 = NCDataset(path_z, "r")
     z_ref = copy( ds1[ "z_srf" ] )
+    f_ref = copy( ds1[ "mask" ] )
     close(ds1)
     ds2 = NCDataset(path_u, "r")
     u_ref = copy( ds2[ "uxy_srf" ] )
     close(ds2)
-    return z_ref, u_ref
+    return z_ref, f_ref, u_ref
 end
 
 ##########################################################

@@ -299,10 +299,10 @@ md"""
 """
 
 # ╔═╡ fd909e1c-b1cf-4ad6-b553-228c1df245db
-bif_plotcons = InitPlotConst(1, 1, ft_size, (800,600), colors, labels1D, dt1D, dt3D);
+bif_plotcons = InitPlotConst(1, 1, 18, (500,500), colors, labels1D, dt1D, dt3D);
 
 # ╔═╡ 86d6b1fa-7386-4a68-ae9a-cc272d1a5fbe
-fig_bif = get_bifurcation_diagram(nc1D_dict, nc1D_WAIS_dict, bif_plotcons)
+fig_bif = get_bifurcation_diagram(nc1D_dict, nc1D_WAIS_dict, bif_plotcons, downsample_factor)
 
 # ╔═╡ 64c58f83-7be0-43ed-b9e4-18cff15e94fe
 md"""
@@ -362,7 +362,7 @@ end
 # ╟─c3226566-3004-4f88-b73c-4426fd48ef2b
 # ╠═9551c5bb-f458-4c2a-8fdb-c1bb067ba6b6
 # ╟─897ac020-da22-48e1-a484-27ec56849904
-# ╟─91ac16d9-6339-4839-850d-3df4bf0a1708
+# ╠═91ac16d9-6339-4839-850d-3df4bf0a1708
 # ╟─bccb8aaf-da92-41f0-9009-6d1d14e187e9
 # ╠═1fb29956-ef45-48b5-99fa-9c3660f79371
 # ╠═517b6037-1c89-4a13-8731-06177b7dad8d

@@ -137,12 +137,12 @@ begin
 end
 
 # ╔═╡ 101b282b-b92b-4b37-837b-f171dc778e32
-load_data!( nc3D_dict, ["f_grnd", "z_bed", "lat2D", "lon2D"] );
+load_data!( nc3D_dict, ["f_grnd", "z_bed", "lat2D", "lon2D", "f_ice"] );
 
 # ╔═╡ a39d8efc-8f68-4a04-adbe-4c60be9b5e54
 begin
-	lowerlim = [1e-8, 1e-8, -Inf, -Inf];
-	upperlim = [2500, 2500, Inf, Inf];
+	lowerlim = [0, 1e-8, -Inf, -Inf];
+	upperlim = [1000, 4000, Inf, Inf];
 	extrema3D_dict = get_extrema( nc3D_dict, var3D_list, lowerlim, upperlim );
 end
 
@@ -199,14 +199,14 @@ md"""
 @bind evol_var Select(var3D_list, default = "uxy_s")
 
 # ╔═╡ 600d1e27-3695-42cb-ae7a-23aadad5633a
-@bind evo_frames confirm(MultiCheckBox( collect(1:1:130) , default =  [1, 72, 74, 76] ))
+@bind evo_frames confirm(MultiCheckBox( collect(1:1:130) , default =  [1, 37, 57, 72, 74, 76] ))
 
 # ╔═╡ c0ab2c56-1ae3-4302-abea-3db58eb41147
 ctrl_dict["ts"]
 
 # ╔═╡ 65bfe62a-1b2e-4368-8ee7-dd5662dd58ce
 begin
-	evolhm_plotcons = InitPlotConst(2, 3, 20, (1200, 1400), colors, labels3D, dt1D, dt3D);
+	evolhm_plotcons = InitPlotConst(2, 3, 20, (1200, 1000), colors, labels3D, dt1D, dt3D);
 	fig_evo = evolution_hmplot(nc3D_dict, ctrl_dict, evo_frames, evolhm_plotcons, evol_var, exp_key, extrema3D_dict)
 end
 
@@ -234,10 +234,10 @@ md"""
 """
 
 # ╔═╡ e4f54db5-834a-44b5-b383-458ba850b0bc
-z_ref, u_ref = load_pd_state()
+z_ref, f_ref, u_ref = load_pd_state()
 
 # ╔═╡ 1ebe7128-37ee-41c1-8777-1a17b2302b49
-fig_z = error_plot_z(nc3D_dict, z_ref)
+fig_z = error_plot_z(nc3D_dict, z_ref, f_ref)
 
 # ╔═╡ c9369b1c-cf9f-4464-963b-6f88a459c319
 md"""
@@ -364,7 +364,7 @@ end
 # ╟─25bc2940-c6a5-4104-b5aa-b7c2e2462c31
 # ╠═0035667d-7d21-4e22-8c7a-7f7d45e1b936
 # ╠═4f171024-2c63-4ca6-a477-7cd11fa68423
-# ╠═711ee795-3f82-4f31-8fda-fb596f8ea2cf
+# ╟─711ee795-3f82-4f31-8fda-fb596f8ea2cf
 # ╟─a1adafa1-36fb-4461-a3dd-31cc720bb59b
 # ╠═e4f54db5-834a-44b5-b383-458ba850b0bc
 # ╠═1ebe7128-37ee-41c1-8777-1a17b2302b49

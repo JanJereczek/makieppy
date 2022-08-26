@@ -90,7 +90,7 @@ function load_text1Dlabels(vars)
     l["V_sl"] = L"Sea-level equivalent ice volume ($10^6$ $\mathrm{km}^3$)"
 
     # Lowercase
-    l["bmb"] = L"Basal MB (m$ \, \mathrm{yr}^{-1}$)"
+    l["bmb"] = L"BMB (m$ \, \mathrm{yr}^{-1}$)"
     # l["bmb_g"] = L"$\dot{m}_{base,g}$ [m$ \, \mathrm{yr}^{-1}$]"
     # l["bmb_shlf"] = L"$\dot{m}_{base,shlf}$ [m$ \, \mathrm{yr}^{-1}$]"
     l["calv"] = L"Calving rate (m$ \, \mathrm{yr}^{-1}$)"
@@ -101,9 +101,9 @@ function load_text1Dlabels(vars)
     # l["fwf"] = L"$fwf$ [Sv]"
     # l["hyst_df_dt"] = L"$\frac{d m}{d t}_{base}$ [1]"
     # l["hyst_dv_dt"] = L"$\frac{d m}{d t}_{base}$ [1]"
-    l["hyst_f_now"] = L"Local atmospheric temperature anomaly (K) $\,$"
+    l["hyst_f_now"] = L"Regional atmospheric temperature anomaly (K) $\,$"
     l["mb"] = L"Total MB (m$ \, \mathrm{yr}^{-1}$)"
-    l["smb"] = L"Surface MB (m$ \, \mathrm{yr}^{-1}$)"
+    l["smb"] = L"SMB (m$ \, \mathrm{yr}^{-1}$)"
     l["time"] = L"time (yr) $\,$"
     # l["uxy_b"] = L"$u_{xy,b}$ [m$ \, \mathrm{yr}^{-1}$]"
     # l["uxy_b_f"] = L"$u_{xy,b,f}$ [m$ \, \mathrm{yr}^{-1}$]"

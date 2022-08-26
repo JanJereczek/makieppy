@@ -263,7 +263,7 @@ end
 
 # ╔═╡ 32271713-4f3d-4e9f-b9dc-2679bb38f821
 begin
-	tipgrid_plotcons = InitPlotConst(1, 1, ft_size, (base_rsl, base_rsl), colors, labels1D, dt1D, dt3D);
+	tipgrid_plotcons = InitPlotConst(1, 1, 22, (base_rsl, base_rsl), colors, labels1D, dt1D, dt3D);
 end
 
 # ╔═╡ 230f4bc1-e9c7-4d5a-9222-63f08a5e155a
@@ -276,14 +276,24 @@ nt_WAIS = length( nc1D_WAIS_dict[ nc1D_WAIS_filt[1] ][ var1D_WAIS_alphabetical[1
 @bind tip_frame confirm( NumberField(1:nt_WAIS, default=nt_WAIS) )
 
 # ╔═╡ 65408fb7-45df-4e75-8771-ecbf64190ec0
-line_plotcons.resolution = (800, 800)
+line_plotcons.resolution = (650, 650)
+
+# ╔═╡ 7a059df9-3456-4aa0-8c2f-4ef030e9c2c7
+begin
+	steppath = "/media/Data/Jan/yelmox_v1.75/isotau1";
+    nc1D_step_list = get_nc_lists(steppath, "yelmo1D_WAIS.nc");
+	nc1D_step = init_dict( nc1D_step_list );
+    load_data!( nc1D_step, ["V_sl"] );
+    fmx_step, a_step, end_step = get_final_value(nc1D_step, "V_sl", 100, 3001);
+    a_step = ones( length(a_step) );
+end
 
 # ╔═╡ aac3fb96-b0a4-435f-9ce4-478de1c2d8fe
 begin
 	if length(nc1D_WAIS_list) > 10
+		line_plotcons.fontsize = 21
 		avg_wdw = 2;
 		fmx_vec, a_vec, end_vec = get_final_value(nc1D_WAIS_dict, "V_sle", avg_wdw, tip_frame);
-		extrema(end_vec)
 		# fig_tgrid, ax_tgrid = scatter_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
 		fig_tgrid, ax_tgrid = hm_tipping(fmx_vec, a_vec, end_vec, line_plotcons);
 		# scatter_ssp( ax, year, "industrial" )
@@ -324,14 +334,14 @@ md"""
 
 # ╔═╡ 10ce2861-9524-4f01-9471-5108686d1cd3
 begin
-	line_plotcons_WAIS = InitPlotConst(nrows1D, ncols1D, ft_size, (1100,900), colors, labels1D, dt1D, dt3D);
+	line_plotcons_WAIS = InitPlotConst(nrows1D, ncols1D, ft_size, (1100,950), colors, labels1D, dt1D, dt3D);
 	fig1D_WAIS = init_fig( line_plotcons_WAIS );
 	axs1D_WAIS = init_axs(fig1D_WAIS, line_plotcons_WAIS, ["hyst_f_now", "bmb", "V_sle", "A_ice"] );
 	init_lines(axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons_WAIS, downsample_factor; tlim);
 end
 
 # ╔═╡ 7c37756b-3bd9-4716-8be4-f99cf025ca70
-@bind hl_ix_WAIS Select(collect(1:length(ixs)), default = 49)
+@bind hl_ix_WAIS Select(collect(1:length(ixs)), default = 31)
 
 # ╔═╡ bf5467bc-7e8b-4dec-b9ed-ef0b3f0cb092
 extract_ramp_parameters( nc1D_list[hl_ix_WAIS] )
@@ -343,9 +353,15 @@ var1D_WAIS_list
 begin
 	update_lines(fig1D_WAIS, axs1D_WAIS, nc1D_WAIS_dict, var1D_WAIS_list, line_plotcons_WAIS, hl_ix_WAIS, downsample_factor)
 	xlims!(axs1D_WAIS[1], 4, 8)
+	xlims!(axs1D_WAIS[2], 0, 30)
+	xlims!(axs1D_WAIS[3], 0, 30)
+	xlims!(axs1D_WAIS[4], 0, 30)
 	axs1D_WAIS[1].xticks = (4:1:8, string.(4:1:8))
 	axs1D_WAIS[1].xticksvisible = true
 	axs1D_WAIS[1].xticklabelsvisible = true
+	axs1D_WAIS[2].xticks = (0:10:30, string.(0:10:30))
+	axs1D_WAIS[2].xticksvisible = true
+	axs1D_WAIS[2].xticklabelsvisible = true
 	fig1D_WAIS
 end
 
@@ -429,6 +445,7 @@ end
 # ╠═e9187f69-b2d7-42ee-939b-edcdd5bff67b
 # ╠═616e2fc6-27a5-43d3-a4e1-70d4659cef7e
 # ╠═65408fb7-45df-4e75-8771-ecbf64190ec0
+# ╠═7a059df9-3456-4aa0-8c2f-4ef030e9c2c7
 # ╠═aac3fb96-b0a4-435f-9ce4-478de1c2d8fe
 # ╟─fda9b297-43ad-4456-8af4-d389058ed6ac
 # ╠═3402fdfc-d227-471f-839f-b405a4a0f06a
